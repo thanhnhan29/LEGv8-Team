@@ -1,0 +1,70 @@
+﻿<svg width="100%" height="100%" viewBox="0 0 900 600" 
+     xmlns="http://www.w3.org/2000/svg" id="datapath-svg-layer">
+
+    <defs>
+        <!-- Có thể định nghĩa style ở đây -->
+    </defs>
+
+    <!-- Vẽ các khối trước (ví dụ) -->
+    <!-- Đặt ID dạng block-... -->
+    <!-- Tọa độ (x, y), width, height cần khớp với ảnh -->
+    <rect id="block-pc" x="50" y="200" width="50" height="60" />
+    <rect id="block-imem" x="150" y="180" width="100" height="100" />
+    <rect id="block-control" x="300" y="150" width="100" height="150" />
+    <rect id="block-regs" x="300" y="320" width="100" height="120" />
+    <rect id="block-signext" x="300" y="480" width="100" height="50" />
+    <rect id="block-adder1" x="120" y="50" width="80" height="50" />
+    <rect id="block-mux2" x="480" y="380" width="30" height="60" />
+    <rect id="block-alu" x="550" y="350" width="100" height="100" />
+    <rect id="block-alucontrol" x="500" y="500" width="80" height="40" />
+    <rect id="block-adder2" x="500" y="100" width="80" height="50" />
+    <rect id="block-shiftleft2" x="430" y="180" width="60" height="40" />
+    <rect id="block-datamem" x="700" y="350" width="100" height="100" />
+    <rect id="block-mux3" x="830" y="380" width="30" height="60" />
+    <rect id="block-mux4" x="700" y="50" width="30" height="60" />
+
+    <!-- Vẽ các đường dẫn (line hoặc path) -->
+    <!-- Đặt ID dạng path-... hoặc control-... hoặc mux-... -->
+    <!-- Tọa độ d="..." hoặc x1,y1,x2,y2 cần khớp ảnh -->
+    <path id="path-pc-imem" d="M100 230 H 150" style="fill:none; stroke:#888; stroke-width:1.5;"/>
+    <path id="path-pc-adder1" d="M75 200 V 75 H 120" style="fill:none; stroke:#888; stroke-width:1.5;"/>
+    <path id="path-imem-out" d="M250 230 H 280" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Đường instr ra -->
+    <path id="path-instr-control" d="M280 230 V 225 H 300" style="fill:none; stroke:#888; stroke-width:1.5;"/>
+    <path id="path-instr-regs" d="M280 230 V 350 H 300" style="fill:none; stroke:#888; stroke-width:1.5;"/>
+    <path id="path-regs-rdata1" d="M400 360 H 550" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Ra ALU input 1 -->
+    <path id="path-regs-rdata2" d="M400 400 H 480" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Ra Mux 2 input 0 -->
+    <path id="path-instr-signext" d="M280 230 V 505 H 300" style="fill:none; stroke:#888; stroke-width:1.5;"/>
+    <path id="path-signext-mux2" d="M400 505 H 450 V 420 H 480" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Ra Mux 2 input 1 -->
+    <path id="path-mux2-alu" d="M510 410 H 550" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Mux 2 ra ALU input 2 -->
+    <path id="path-alu-result" d="M650 400 H 680" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- ALU Result ra -->
+    <path id="path-alu-memaddr" d="M680 400 H 700" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- ALU Result -> Mem Addr -->
+    <path id="path-mem-readdata" d="M800 400 H 830" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Mem Read Data -> Mux 3 input 1 -->
+    <path id="path-alu-mux3" d="M680 400 V 390 H 830" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- ALU Result -> Mux 3 input 0 -->
+    <path id="path-mux3-wb" d="M860 410 H 880 V 380 H 400" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Mux 3 -> Write Back Regs -->
+    <path id="path-wb-regwrite" d="M400 380 H 350" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Đường vào Write Data cuối -->
+    <path id="path-rdata2-memwrite" d="M400 400 V 430 H 700" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Reg Data 2 -> Mem Write Data -->
+
+    <!-- Đường PC update -->
+    <path id="path-adder1-mux4" d="M200 75 H 680 V 60 H 700" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- PC+4 -> Mux4 Input 0 -->
+    <path id="path-signext-shift" d="M400 505 V 520 H 410 V 200 H 430" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- SignExt -> ShiftLeft2 -->
+    <path id="path-shift-adder2" d="M490 200 H 500" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Shift -> Adder2 -->
+    <path id="path-pc-adder2" d="M75 200 V 125 H 500" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- PC+4 -> Adder2 -->
+    <path id="path-adder2-mux4" d="M580 125 H 680 V 90 H 700" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Adder2 -> Mux4 Input 1 -->
+    <path id="path-mux4-pc" d="M730 80 H 750 V 230 H 100" style="fill:none; stroke:#888; stroke-width:1.5;"/> <!-- Mux4 -> PC -->
+    <path id="control-regwrite" d="M..." />
+    <path id="control-alusrc" d="M..." />
+    <!-- Ví dụ ID cho các đường control (chỉ là ví dụ) -->
+    <line id="control-alusrc" x1="400" y1="260" x2="480" y2="375" style="stroke:#00F; stroke-width:1; stroke-dasharray: 4 2;"/> <!-- Đường đến select Mux 2 -->
+    <line id="control-memread" x1="400" y1="200" x2="700" y2="340" style="stroke:#00F; stroke-width:1; stroke-dasharray: 4 2;"/> <!-- Đường đến Mem Read -->
+    <line id="control-memwrite" x1="400" y1="240" x2="700" y2="460" style="stroke:#00F; stroke-width:1; stroke-dasharray: 4 2;"/> <!-- Đường đến Mem Write -->
+    <line id="control-regwrite" x1="400" y1="280" x2="405" y2="440" style="stroke:#00F; stroke-width:1; stroke-dasharray: 4 2;"/> <!-- Đường đến Reg Write Enable -->
+
+    <!-- Ví dụ ID cho các đường chọn của MUX (chỉ là ví dụ) -->
+    <circle id="mux-alusrc-0" cx="480" cy="400" r="3" style="fill: none; stroke: #0A0; stroke-width: 1;"/> <!-- Input 0 của Mux 2 -->
+    <circle id="mux-alusrc-1" cx="480" cy="420" r="3" style="fill: none; stroke: #0A0; stroke-width: 1;"/> <!-- Input 1 của Mux 2 -->
+    <circle id="mux-memtoreg-0" cx="830" cy="390" r="3" style="fill: none; stroke: #0A0; stroke-width: 1;"/> <!-- Input 0 của Mux 3 -->
+    <circle id="mux-memtoreg-1" cx="830" cy="400" r="3" style="fill: none; stroke: #0A0; stroke-width: 1;"/> <!-- Input 1 của Mux 3 -->
+    <circle id="mux-pcsrc-0" cx="700" cy="60" r="3" style="fill: none; stroke: #0A0; stroke-width: 1;"/> <!-- Input 0 của Mux 4 -->
+    <circle id="mux-pcsrc-1" cx="700" cy="90" r="3" style="fill: none; stroke: #0A0; stroke-width: 1;"/> <!-- Input 1 của Mux 4 -->
+
+</svg>

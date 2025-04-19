@@ -1,0 +1,611 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LEGv8 Datapath Visualizer</title>
+    <style>
+      /* --- Global Styles --- */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0 0 30px 0;
+        box-sizing: border-box;
+        font-family: system-ui, sans-serif;
+        background-color: #f0f2f5;
+        overflow: hidden;
+      }
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+      .main-container {
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+        padding: 10px;
+        gap: 10px;
+      }
+      .column {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        gap: 10px;
+      }
+      .panel {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        display: flex;
+        flex-direction: column; /* overflow: hidden; Di chuyển xuống rule cụ thể hơn */
+      }
+      .panel h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+        flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* --- Left Column --- */
+      #left-column {
+        flex: 0 1 380px;
+        min-width: 300px;
+      }
+      #code-panel {
+        flex-grow: 1;
+        min-height: 0;
+        overflow: hidden; /* Added overflow */
+      }
+      #execution-panel {
+        flex-grow: 0;
+        flex-shrink: 0;
+        min-height: auto;
+        overflow: hidden; /* Added overflow */
+      }
+      /* ... other left column styles ... */
+      #code-editor-area {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .editor-controls {
+        margin-bottom: 10px;
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .editor-controls button {
+        padding: 5px 10px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .editor-controls button:hover {
+        background-color: #5a6268;
+      }
+      .editor-controls input[type="file"] {
+        display: none;
+      }
+      #code-editor,
+      #code-display {
+        width: 100%;
+        flex-grow: 1;
+        font-family: monospace;
+        font-size: 10pt;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 5px;
+        overflow-y: auto;
+        min-height: 150px;
+      }
+      #code-editor {
+        resize: none;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        word-wrap: normal;
+      }
+      #code-display {
+        white-space: pre;
+        background-color: #fdfdfd;
+        display: none;
+      }
+      .code-line {
+        display: block;
+        padding: 1px 3px;
+        border-radius: 2px;
+        min-height: 1.2em;
+        box-sizing: border-box;
+      }
+      .code-line.highlighted {
+        background-color: #cfe2ff;
+        border-left: 3px solid #0d6efd;
+        padding-left: 0px;
+      }
+      .code-line.is-label {
+        color: #6f42c1;
+        font-weight: bold;
+      }
+      .code-line.is-comment {
+        color: #6a737d;
+        font-style: italic;
+      }
+      #execution-panel .control-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      #execution-panel .control-row span {
+        font-size: 1em;
+        color: #555;
+      }
+      #execution-panel .step-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      #execution-panel .step-buttons button {
+        flex-grow: 1;
+        padding: 8px 12px;
+        font-size: 1em;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        background-color: white;
+      }
+      #execution-panel .step-buttons button:hover {
+        background-color: #f0f0f0;
+      }
+      #execution-panel .step-buttons button:disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+        color: #adb5bd;
+      }
+      #execution-panel #run-pause-button {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+      }
+      #execution-panel #run-pause-button:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+      }
+      #execution-panel #run-pause-button.paused {
+        background-color: #ffc107;
+        color: black;
+        border-color: #ffc107;
+      }
+      #execution-panel #run-pause-button.paused:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+      }
+      #execution-panel #reset-button {
+        background-color: #dc3545;
+        color: white;
+        border-color: #dc3545;
+      }
+      #execution-panel #reset-button:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 24px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #2196f3;
+      }
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
+
+      /* --- Center Column --- */
+      #center-column {
+        flex: 1 1 auto;
+      }
+      #datapath-panel {
+        flex-grow: 1;
+        min-height: 0;
+        overflow: hidden; /* Added overflow */
+      }
+      #datapath-area {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      #datapath-container {
+        flex-grow: 1;
+        position: relative;
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+      }
+      #datapath-svg-object {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      /* ... datapath svg styles ... */
+      #datapath-svg-object .path-highlight {
+        stroke: #e91e63;
+        stroke-width: 2.5;
+        transition: stroke 0.15s linear, stroke-width 0.15s linear;
+      }
+      #datapath-svg-object .block-highlight {
+        fill: rgba(233, 30, 99, 0.15);
+        stroke: #e91e63;
+        stroke-width: 1.5;
+        transition: fill 0.15s linear;
+      }
+      #datapath-svg-object .signal-dot {
+        r: 3.5;
+        stroke: black;
+        stroke-width: 0.5;
+      }
+
+      /* --- Right Column --- */
+      #right-column {
+        flex: 0 1 350px;
+        min-width: 280px;
+        /* display: flex; flex-direction: column; height: 100%; gap: 10px; Đã có trong .column */
+      }
+
+      #tabs-panel-top,
+      #tabs-panel-bottom {
+        /* display: flex; flex-direction: column; Đã có trong .panel */
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 0;
+        min-height: 0; /* Quan trọng! */
+        overflow: hidden; /* Quan trọng! Cắt mọi thứ tràn ra khỏi panel */
+      }
+
+      .tabs-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+        overflow: hidden; /*Không cần thiết lắm nếu .tab-content có overflow */
+      }
+
+      .tab-buttons {
+        flex-shrink: 0;
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 5px;
+      }
+      .tab-buttons button {
+        padding: 6px 12px;
+        margin-right: 3px;
+        border: 1px solid #ccc;
+        border-bottom: none;
+        background-color: #eee;
+        cursor: pointer;
+        border-radius: 4px 4px 0 0;
+        font-size: 1em;
+      }
+      .tab-buttons button.active {
+        background-color: white;
+        font-weight: bold;
+        border-bottom: 1px solid white;
+        margin-bottom: -1px;
+      }
+
+      .tab-content {
+        font-family: monospace;
+        white-space: pre;
+        font-size: 0.85em;
+        flex-grow: 1; /* Lấp đầy không gian dọc còn lại */
+        min-height: 0; /* Quan trọng! Cho phép co lại */
+        overflow-y: auto; /* Cuộn dọc NẾU nội dung cao hơn */
+        overflow-x: auto; /* Cuộn ngang NẾU nội dung rộng hơn */
+        padding: 5px;
+        border: 1px solid #eee;
+        border-radius: 0 0 4px 4px;
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* --- Register/State/Signal Display Styles --- */
+      /* ... Các style này giữ nguyên ... */
+      .register-grid {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 2px 10px;
+        font-size: 1em;
+        padding: 5px;
+      }
+      .register-grid > div {
+        padding: 1px 3px;
+        white-space: nowrap;
+      }
+      .register-name {
+        font-weight: bold;
+        color: #333;
+      }
+      .register-hex {
+        color: #0d6efd;
+      }
+      .register-dec {
+        color: #6c757d;
+      }
+      .cpu-state-info {
+        padding: 10px 5px;
+        font-size: 1em;
+      }
+      .cpu-state-info strong {
+        color: #333;
+      }
+      .control-signals-list {
+        padding: 5px;
+        font-size: 1em;
+        line-height: 1.6;
+      }
+      .control-signal {
+        display: flex;
+        justify-content: space-between;
+        padding: 1px 5px;
+        border-bottom: 1px dotted #eee;
+      }
+      .control-signal-name {
+        color: #333;
+        font-weight: 500;
+      }
+      .control-signal-value {
+        font-weight: bold;
+        padding: 0 5px;
+        border-radius: 3px;
+      }
+      .control-signal-value.active {
+        color: #198754;
+      }
+      .control-signal-value.inactive {
+        color: #dc3545;
+      }
+      .control-signal-value.other {
+        color: #0d6efd;
+      }
+
+      /* --- Banner Styles --- */
+      #banner-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #343a40;
+        color: #f8f9fa;
+        padding: 5px 0;
+        overflow: hidden;
+        white-space: nowrap;
+        z-index: 1000;
+        font-size: 0.9em;
+        box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+      }
+      #banner-text {
+        display: inline-block;
+        padding-left: 100%;
+        animation: scroll-left 25s linear infinite;
+      }
+      @keyframes scroll-left {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-150%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-container">
+      <!-- Left Column: Code & Execution Controls -->
+      <div id="left-column" class="column">
+        <!-- Code Panel -->
+        <div id="code-panel" class="panel">
+          <div id="code-editor-area">
+            <h2>Code editor</h2>
+            <div class="editor-controls">
+              <button id="load-program-button">Compile code</button>
+              <button id="upload-file-button">Upload File</button>
+              <input type="file" id="file-input" accept=".s, .S, .asm, .txt" />
+            </div>
+            <textarea id="code-editor" spellcheck="false"></textarea>
+            <div id="code-display"></div>
+          </div>
+        </div>
+        <!-- Execution Control Panel -->
+        <div id="execution-panel" class="panel">
+          <h2>Execution Control</h2>
+          <div class="control-row">
+            <span>Current Instruction:</span
+            ><span id="current-instr-display">N/A</span>
+          </div>
+          <div class="control-row">
+            <span>Micro-Step:</span
+            ><span id="micro-step-display">Idle (0/5)</span>
+          </div>
+          <div class="control-row">
+            <span>Show Animations:</span
+            ><label class="switch"
+              ><input
+                type="checkbox"
+                id="show-animations-toggle"
+                checked /><span class="slider"></span
+            ></label>
+          </div>
+          <div class="step-buttons">
+            <button id="micro-step-button" disabled>Micro Step</button
+            ><button id="full-instruction-button" disabled>
+              Full Instruction
+            </button>
+          </div>
+          <div class="step-buttons">
+            <button id="reset-button">Reset</button
+            ><button id="run-pause-button" disabled>Run</button>
+          </div>
+        </div>
+      </div>
+      <!-- End Left Column -->
+
+      <!-- Center Column: Datapath -->
+      <div id="center-column" class="column">
+        <div id="datapath-panel" class="panel">
+          <div id="datapath-area">
+            <h2>CPU LEGv8</h2>
+            <div id="datapath-container">
+              <object
+                id="datapath-svg-object"
+                data="{{ url_for('static', filename='test.drawio.svg') }}"
+                type="image/svg+xml"
+              >
+                SVG Overlay not loaded.
+              </object>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End Center Column -->
+
+      <!-- Right Column: Divided Status Tabs -->
+      <div id="right-column" class="column">
+        <!-- ==== TOP TAB PANEL ==== -->
+        <div id="tabs-panel-top" class="panel">
+          <h2>CPU State</h2>
+          <div id="status-tabs-top" class="tabs-container">
+            <div class="tab-buttons">
+              <!-- Add data-panel attribute -->
+              <button
+                class="tab-button active"
+                data-tab="registers"
+                data-panel="top"
+              >
+                Registers
+              </button>
+              <button class="tab-button" data-tab="memory" data-panel="top">
+                Memory
+              </button>
+              <button class="tab-button" data-tab="cpu-state" data-panel="top">
+                CPU State
+              </button>
+              <button
+                class="tab-button"
+                data-tab="control-signals"
+                data-panel="top"
+              >
+                Control
+              </button>
+            </div>
+            <!-- Content for TOP tabs (IDs remain the same) -->
+            <div id="tab-registers" class="tab-content active">
+              <div class="register-grid" id="register-display-grid">
+                <div>(Load program...)</div>
+              </div>
+            </div>
+            <div id="tab-memory" class="tab-content">(Load program...)</div>
+            <div id="tab-cpu-state" class="tab-content">
+              <div class="cpu-state-info">
+                <strong>PC:</strong> <span id="pc-value-display">N/A</span>
+              </div>
+            </div>
+            <div id="tab-control-signals" class="tab-content">
+              <div class="control-signals-list" id="control-signals-display">
+                <div>(Signals appear during execution...)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ==== END TOP TAB PANEL ==== -->
+
+        <!-- ==== BOTTOM TAB PANEL ==== -->
+        <div id="tabs-panel-bottom" class="panel">
+          <h2>Execution Log</h2>
+          <div id="status-tabs-bottom" class="tabs-container">
+            <div class="tab-buttons">
+              <!-- Add data-panel attribute -->
+              <button
+                class="tab-button active"
+                data-tab="log"
+                data-panel="bottom"
+              >
+                Log
+              </button>
+              <!-- Add more buttons here if needed for the bottom panel later -->
+            </div>
+            <!-- Content for BOTTOM tabs (IDs remain the same) -->
+            <div id="tab-log" class="tab-content active">
+              (Execution log...)
+            </div>
+            <!-- Add more content divs here if needed -->
+          </div>
+        </div>
+        <!-- ==== END BOTTOM TAB PANEL ==== -->
+      </div>
+      <!-- End Right Column -->
+    </div>
+    <!-- End main-container -->
+
+    <!-- Banner Element -->
+    <div id="banner-container">
+      <span id="banner-text"
+        >Võ Thành Nhân - Khoa học tự nhiên - Code không bug plsss - Cảm ơn sự hỗ
+        trợ của Google AI Studio</span
+      >
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
