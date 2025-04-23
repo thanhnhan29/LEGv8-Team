@@ -503,14 +503,15 @@
         <div id="datapath-panel" class="panel">
           <div id="datapath-area">
             <h2>CPU LEGv8</h2>
-            <div id="datapath-container">
-              <object
-                id="datapath-svg-object"
-                data="{{ url_for('static', filename='test.drawio.svg') }}"
-                type="image/svg+xml"
-              >
-                SVG Overlay not loaded.
-              </object>
+            <object
+            id="datapath-svg-object"
+            data="{{ url_for('static', filename='datapath.svg') }}"
+            type="image/svg+xml"
+            width="800" 
+            height="600"
+          >
+            SVG Overlay not loaded.
+          </object>
             </div>
           </div>
         </div>
