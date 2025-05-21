@@ -1,0 +1,60 @@
+﻿# -*- coding: utf-8 -*-
+
+class Memory:
+    def __init__(self, memory_type="data"):
+        self.memory = {}
+        self.memory_type = memory_type # "data" or "instruction"
+
+    def initialize(self):
+        self.memory = {}
+
+    def read(self, address):
+        address = int(address)
+        value = self.memory.get(address, 0) # Default to 0 if address not found for data memory
+        if self.memory_type == "instruction" and address not in self.memory:
+             raise ValueError(f"Fetch Error: No instruction found at PC=0x{address:X}")
+        return int(value) & 0xFFFFFFFFFFFFFFFF if self.memory_type == "data" else value
+
+    def write(self, address, value):
+        address = int(address)
+        if self.memory_type == "instruction":
+            # Instruction memory is typically written to by the loader
+            self.memory[address] = str(value) # Store instruction strings
+        else: # Data memory
+            written_value = int(value) & 0xFFFFFFFFFFFFFFFF
+            self.memory[address] = written_value
+
+    def get_display_dict(self):
+        if self.memory_type == "instruction":
+            # For instruction memory, might want to show address: instruction string
+            return {f"0x{addr:X}": val for addr, val in self.memory.items()}
+        
+        # For data memory, show non-zero values
+        mem_display = {
+            f"0x{addr:X}": f"0x{val:X} ({val})"
+            for addr, val in self.memory.items() if isinstance(val, int) and val != 0
+        }
+        return dict(sorted(mem_display.items(), key=lambda item: int(item[0], 16)))
+
+    def load_instructions(self, instructions_dict):
+        """For instruction memory, loads a dictionary of address: instruction_string."""
+        if self.memory_type == "instruction":
+            self.memory = instructions_dict.copy()
+        else:
+            raise TypeError("load_instructions can only be called on instruction memory.")
+
+    def fetch_instruction(self, address):
+        if self.memory_type != "instruction":
+            raise TypeError("fetch_instruction can only be called on instruction memory.")
+        instr = self.memory.get(int(address))
+        if instr is None:
+            raise ValueError(f"Fetch Error: No instruction found at PC=0x{int(address):X}")
+        return instr
+
+    def get_raw_memory(self):
+        """Returns a copy of the internal memory dictionary."""
+        return self.memory.copy()
+
+    def set_raw_memory(self, mem_dict):
+        """Sets internal memory from a given dictionary (used for state restoration)."""
+        self.memory = mem_dict.copy()
