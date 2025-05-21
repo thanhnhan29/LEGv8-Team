@@ -1,41 +1,50 @@
 ﻿document.addEventListener("DOMContentLoaded", () => {
   function forceRightPanelVisible() {
     console.log("FORCING right panel visibility...");
-    
-    const rightColumn = document.getElementById('right-column');
+
+    const rightColumn = document.getElementById("right-column");
     if (!rightColumn) {
       console.error("RIGHT COLUMN NOT FOUND IN DOM");
       return;
     }
-    
+
     // Force CSS display
-    rightColumn.setAttribute('style', 'display: flex !important; flex: 1 !important; min-width: 280px !important; max-width: 400px !important; flex-direction: column !important; border: 2px solid red !important;');
-    
+    rightColumn.setAttribute(
+      "style",
+      "display: flex !important; flex: 1 !important; min-width: 280px !important; max-width: 400px !important; flex-direction: column !important; border: 2px solid red !important;"
+    );
+
     // Check children
-    const topPanel = document.getElementById('tabs-panel-top');
-    const bottomPanel = document.getElementById('tabs-panel-bottom');
-    
+    const topPanel = document.getElementById("tabs-panel-top");
+    const bottomPanel = document.getElementById("tabs-panel-bottom");
+
     if (topPanel) {
-      topPanel.setAttribute('style', 'display: flex !important; flex: 1 !important; flex-direction: column !important; min-height: 200px !important; border: 1px solid blue !important;');
+      topPanel.setAttribute(
+        "style",
+        "display: flex !important; flex: 1 !important; flex-direction: column !important; min-height: 200px !important; border: 1px solid blue !important;"
+      );
       console.log("Top panel found and styled");
     } else {
       console.error("Top panel missing!");
     }
-    
+
     if (bottomPanel) {
-      bottomPanel.setAttribute('style', 'display: flex !important; flex: 1 !important; flex-direction: column !important; min-height: 200px !important; border: 1px solid green !important;');
+      bottomPanel.setAttribute(
+        "style",
+        "display: flex !important; flex: 1 !important; flex-direction: column !important; min-height: 200px !important; border: 1px solid green !important;"
+      );
       console.log("Bottom panel found and styled");
     } else {
       console.log("Bottom panel missing - will try to create it");
     }
-    
+
     console.log("Force styling applied to right panel");
   }
-  
+
   // Call this function immediately
   forceRightPanelVisible();
-  const emergencyStyles = document.createElement('style');
-emergencyStyles.textContent = `
+  const emergencyStyles = document.createElement("style");
+  emergencyStyles.textContent = `
   .main-container {
     display: flex !important;
     flex-direction: row !important;
@@ -85,7 +94,7 @@ emergencyStyles.textContent = `
     gap: 5px;
   }
 `;
-document.head.appendChild(emergencyStyles);
+  document.head.appendChild(emergencyStyles);
   // --- Constants (Unchanged) ---
   const BITS_64 = 64n;
   const SIGN_BIT_64_MASK = 1n << (BITS_64 - 1n);
@@ -95,14 +104,18 @@ document.head.appendChild(emergencyStyles);
   // --- Element References ---
   const loadProgramButton = document.getElementById("load-program-button");
   const microStepButton = document.getElementById("micro-step-button");
-  const fullInstructionButton = document.getElementById("full-instruction-button");
+  const fullInstructionButton = document.getElementById(
+    "full-instruction-button"
+  );
   const resetButton = document.getElementById("reset-button");
   const runPauseButton = document.getElementById("run-pause-button");
   const codeEditor = document.getElementById("code-editor");
   const codeDisplay = document.getElementById("code-display");
   const currentInstrDisplay = document.getElementById("current-instr-display");
   const microStepDisplay = document.getElementById("micro-step-display");
-  const showAnimationsToggle = document.getElementById("show-animations-toggle");
+  const showAnimationsToggle = document.getElementById(
+    "show-animations-toggle"
+  );
   const svgObject = document.getElementById("datapath-svg-object");
   if (!svgObject) {
     console.error("SVG object reference not found! Check the ID in HTML.");
@@ -113,181 +126,200 @@ document.head.appendChild(emergencyStyles);
   }
   const uploadFileButton = document.getElementById("upload-file-button");
   const fileInput = document.getElementById("file-input");
-  
+
   // Now you can safely log these
   console.log("SVG object reference:", svgObject);
   console.log("SVG source:", svgObject?.getAttribute("data"));
   // Add SVG status indicator
-  const svgStatus = document.createElement('div');
-  svgStatus.id = 'svg-status';
-  svgStatus.style = 'position:fixed; bottom:10px; right:10px; padding:5px; background:rgba(0,0,0,0.7); color:white; z-index:1000;';
+  const svgStatus = document.createElement("div");
+  svgStatus.id = "svg-status";
+  svgStatus.style =
+    "position:fixed; bottom:10px; right:10px; padding:5px; background:rgba(0,0,0,0.7); color:white; z-index:1000;";
   svgStatus.textContent = "SVG: Not loaded";
   document.body.appendChild(svgStatus);
 
   function fixRightPanel() {
     console.log("Fixing right panel...");
-    
+
     // Check if right column exists
-    const rightColumn = document.getElementById('right-column');
+    const rightColumn = document.getElementById("right-column");
     if (!rightColumn) {
       console.error("Right column not found in DOM");
       return;
     }
     ensureBottomPanel();
     // Force right column visibility
-    rightColumn.style.display = 'flex';
-    rightColumn.style.flex = '1';
-    rightColumn.style.minWidth = '280px';
-    rightColumn.style.flexDirection = 'column';
-    
+    rightColumn.style.display = "flex";
+    rightColumn.style.flex = "1";
+    rightColumn.style.minWidth = "280px";
+    rightColumn.style.flexDirection = "column";
+
     // Check top panel and ensure it's visible
-    const topPanel = document.getElementById('tabs-panel-top');
+    const topPanel = document.getElementById("tabs-panel-top");
     if (topPanel) {
-      topPanel.style.display = 'flex';
-      topPanel.style.flex = '1';
-      topPanel.style.flexDirection = 'column';
-      topPanel.style.minHeight = '0';
-      topPanel.style.overflow = 'auto';
+      topPanel.style.display = "flex";
+      topPanel.style.flex = "1";
+      topPanel.style.flexDirection = "column";
+      topPanel.style.minHeight = "0";
+      topPanel.style.overflow = "auto";
     }
-    
+
     // Check if bottom panel exists and make it visible
-    const bottomPanel = document.getElementById('tabs-panel-bottom');
+    const bottomPanel = document.getElementById("tabs-panel-bottom");
     if (bottomPanel) {
-      bottomPanel.style.display = 'flex';
-      bottomPanel.style.flex = '1';
-      bottomPanel.style.flexDirection = 'column';
-      bottomPanel.style.minHeight = '0';
-      bottomPanel.style.overflow = 'auto';
+      bottomPanel.style.display = "flex";
+      bottomPanel.style.flex = "1";
+      bottomPanel.style.flexDirection = "column";
+      bottomPanel.style.minHeight = "0";
+      bottomPanel.style.overflow = "auto";
     }
-  
+
     // Fix for possibly missing tab content divs
     ensureTabContentExists();
-    
+
     // Force display of active tabs
-    document.querySelectorAll('.tab-content.active').forEach(tab => {
-      if (tab) tab.style.display = 'block';
+    document.querySelectorAll(".tab-content.active").forEach((tab) => {
+      if (tab) tab.style.display = "block";
     });
-    
+
     console.log("Right panel fix applied");
   }
-  
+
   function ensureBottomPanel() {
-    const rightColumn = document.getElementById('right-column');
+    const rightColumn = document.getElementById("right-column");
     if (!rightColumn) return;
-    
+
     // Check if bottom panel exists
-    let bottomPanel = document.getElementById('tabs-panel-bottom');
+    let bottomPanel = document.getElementById("tabs-panel-bottom");
     if (!bottomPanel) {
       // Create the bottom panel
-      bottomPanel = document.createElement('div');
-      bottomPanel.id = 'tabs-panel-bottom';
-      bottomPanel.className = 'panel';
-      
+      bottomPanel = document.createElement("div");
+      bottomPanel.id = "tabs-panel-bottom";
+      bottomPanel.className = "panel";
+
       // Add heading
-      const heading = document.createElement('h2');
-      heading.textContent = 'Log';
+      const heading = document.createElement("h2");
+      heading.textContent = "Log";
       bottomPanel.appendChild(heading);
-      
+
       // Append to right column
       rightColumn.appendChild(bottomPanel);
-      
+
       console.log("Created missing bottom panel");
     }
   }
   // Add this function to ensure all tab content divs exist
   function ensureTabContentExists() {
     // Check if tab content divs exist and create them if missing
-    const tabIds = ['registers', 'memory', 'cpu-state', 'control-signals', 'log'];
-    const topPanelTabs = ['registers', 'memory', 'cpu-state', 'control-signals'];
-    const bottomPanelTabs = ['log'];
-    
-    const topPanel = document.getElementById('tabs-panel-top');
-    const bottomPanel = document.getElementById('tabs-panel-bottom');
-    
+    const tabIds = [
+      "registers",
+      "memory",
+      "cpu-state",
+      "control-signals",
+      "log",
+    ];
+    const topPanelTabs = [
+      "registers",
+      "memory",
+      "cpu-state",
+      "control-signals",
+    ];
+    const bottomPanelTabs = ["log"];
+
+    const topPanel = document.getElementById("tabs-panel-top");
+    const bottomPanel = document.getElementById("tabs-panel-bottom");
+
     // Create tab container in top panel if missing
-    if (topPanel && !topPanel.querySelector('.tabs-container')) {
-      const tabsContainer = document.createElement('div');
-      tabsContainer.className = 'tabs-container';
-      
+    if (topPanel && !topPanel.querySelector(".tabs-container")) {
+      const tabsContainer = document.createElement("div");
+      tabsContainer.className = "tabs-container";
+
       // Create tab buttons container
-      const tabButtons = document.createElement('div');
-      tabButtons.className = 'tab-buttons';
-      
+      const tabButtons = document.createElement("div");
+      tabButtons.className = "tab-buttons";
+
       // Create buttons for each top panel tab
       topPanelTabs.forEach((tabId, index) => {
-        const button = document.createElement('button');
-        button.className = 'tab-button' + (index === 0 ? ' active' : '');
-        button.setAttribute('data-tab', tabId);
-        button.setAttribute('data-panel', 'top');
-        button.textContent = tabId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        const button = document.createElement("button");
+        button.className = "tab-button" + (index === 0 ? " active" : "");
+        button.setAttribute("data-tab", tabId);
+        button.setAttribute("data-panel", "top");
+        button.textContent = tabId
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
         tabButtons.appendChild(button);
       });
-      
+
       tabsContainer.appendChild(tabButtons);
-      
+
       // Create tab contents
       topPanelTabs.forEach((tabId, index) => {
         // Check if tab content already exists
         if (!document.getElementById(`tab-${tabId}`)) {
-          const tabContent = document.createElement('div');
+          const tabContent = document.createElement("div");
           tabContent.id = `tab-${tabId}`;
-          tabContent.className = 'tab-content' + (index === 0 ? ' active' : '');
-          tabContent.style.display = index === 0 ? 'block' : 'none';
-          
+          tabContent.className = "tab-content" + (index === 0 ? " active" : "");
+          tabContent.style.display = index === 0 ? "block" : "none";
+
           // Add specific content for each tab
-          switch(tabId) {
-            case 'registers':
-              tabContent.innerHTML = '<div id="register-display-grid" class="register-grid"></div>';
+          switch (tabId) {
+            case "registers":
+              tabContent.innerHTML =
+                '<div id="register-display-grid" class="register-grid"></div>';
               break;
-            case 'memory':
-              tabContent.innerHTML = '<pre id="tab-memory-content">(Load program to view memory)</pre>';
+            case "memory":
+              tabContent.innerHTML =
+                '<pre id="tab-memory-content">(Load program to view memory)</pre>';
               break;
-            case 'cpu-state':
-              tabContent.innerHTML = '<div><strong>PC:</strong> <span id="pc-value-display">N/A</span></div>';
+            case "cpu-state":
+              tabContent.innerHTML =
+                '<div><strong>PC:</strong> <span id="pc-value-display">N/A</span></div>';
               break;
-            case 'control-signals':
+            case "control-signals":
               tabContent.innerHTML = '<div id="control-signals-display"></div>';
               break;
           }
-          
+
           tabsContainer.appendChild(tabContent);
         }
       });
-      
+
       topPanel.appendChild(tabsContainer);
     }
-    
+
     // If bottom panel exists but no tab container
-    if (bottomPanel && !bottomPanel.querySelector('.tabs-container')) {
-      const tabsContainer = document.createElement('div');
-      tabsContainer.className = 'tabs-container';
-      
+    if (bottomPanel && !bottomPanel.querySelector(".tabs-container")) {
+      const tabsContainer = document.createElement("div");
+      tabsContainer.className = "tabs-container";
+
       // Create tab buttons container
-      const tabButtons = document.createElement('div');
-      tabButtons.className = 'tab-buttons';
-      
+      const tabButtons = document.createElement("div");
+      tabButtons.className = "tab-buttons";
+
       // Create button for log tab
-      const button = document.createElement('button');
-      button.className = 'tab-button active';
-      button.setAttribute('data-tab', 'log');
-      button.setAttribute('data-panel', 'bottom');
-      button.textContent = 'Log';
+      const button = document.createElement("button");
+      button.className = "tab-button active";
+      button.setAttribute("data-tab", "log");
+      button.setAttribute("data-panel", "bottom");
+      button.textContent = "Log";
       tabButtons.appendChild(button);
-      
+
       tabsContainer.appendChild(tabButtons);
-      
+
       // Create log tab content if it doesn't exist
-      if (!document.getElementById('tab-log')) {
-        const tabContent = document.createElement('div');
-        tabContent.id = 'tab-log';
-        tabContent.className = 'tab-content active';
-        tabContent.style.display = 'block';
-        tabContent.style.whiteSpace = 'pre-wrap';
-        tabContent.textContent = 'Load a program using the \'Compile Code\' button or \'Upload File\'.\n';
-        
+      if (!document.getElementById("tab-log")) {
+        const tabContent = document.createElement("div");
+        tabContent.id = "tab-log";
+        tabContent.className = "tab-content active";
+        tabContent.style.display = "block";
+        tabContent.style.whiteSpace = "pre-wrap";
+        tabContent.textContent =
+          "Load a program using the 'Compile Code' button or 'Upload File'.\n";
+
         tabsContainer.appendChild(tabContent);
       }
-      
+
       bottomPanel.appendChild(tabsContainer);
     }
   }
@@ -305,27 +337,31 @@ document.head.appendChild(emergencyStyles);
     const registersTabContent = document.getElementById("tab-registers");
     const memoryTabContent = document.getElementById("tab-memory");
     const cpuStateTabContent = document.getElementById("tab-cpu-state");
-    const controlSignalsTabContent = document.getElementById("tab-control-signals");
+    const controlSignalsTabContent = document.getElementById(
+      "tab-control-signals"
+    );
     const logTabContent = document.getElementById("tab-log");
-  
+
     // Update structured display references
-    const registerDisplayGrid = document.getElementById("register-display-grid");
+    const registerDisplayGrid = document.getElementById(
+      "register-display-grid"
+    );
     const pcValueDisplay = document.getElementById("pc-value-display");
-    const controlSignalsDisplay = document.getElementById("control-signals-display");
-    
+    const controlSignalsDisplay = document.getElementById(
+      "control-signals-display"
+    );
+
     return {
       registersTabContent,
       memoryTabContent,
-      cpuStateTabContent, 
+      cpuStateTabContent,
       controlSignalsTabContent,
       logTabContent,
       registerDisplayGrid,
       pcValueDisplay,
-      controlSignalsDisplay
+      controlSignalsDisplay,
     };
   }
-
-
 
   const logTabContent = document.getElementById("tab-log"); // In Bottom Panel
 
@@ -359,7 +395,7 @@ document.head.appendChild(emergencyStyles);
   ];
 
   // --- Initial Code (Unchanged) ---
-  codeEditor.value = `// Example program:\n// Or Upload a file (.S, .asm, .txt)\nADDI X1, XZR, #10    // X1 = 10\nADDI X2, XZR, #5     // X2 = 5\nloop:                // Example Label\nADD X3, X1, X2       // X3 = X1 + X2 = 15\nSTUR X3, [SP, #8]    // Store X3 to Mem[SP+8]\nSUBI X2, X2, #1      // X2 = X2 - 1\nCBZ X2, end          // Branch if X2 is zero\nB loop               // Unconditional branch to loop\nend:                 // End Label\nADD X6, X6, #1       // Executed after loop finishes\n// End`;
+  codeEditor.value = `// Example program:\n// Or Upload a file (.S, .asm, .txt)\nADDI X1, XZR, #10    // X1 = 10\nADDI X2, XZR, #5     // X2 = 5\nloop:               \nADD X3, X1, X2       // X3 = X1 + X2 = 15\nSTUR X3, [SP, #8]    // Store X3 to Mem[SP+8]\nSUBI X2, X2, #1      // X2 = X2 - 1\nCBZ X2, end          // Branch if X2 is zero\nB loop               // Unconditional branch to loop\nend:                 \nADD X6, X6, #1       // Executed after loop finishes\n// End`;
 
   // --- GSAP Registration (Unchanged) ---
   gsap.registerPlugin(MotionPathPlugin);
@@ -560,30 +596,31 @@ document.head.appendChild(emergencyStyles);
       console.warn("resetAllSvgStyles: No SVG document available");
       return;
     }
-    
+
     try {
       highlightedElements.clear();
       const dots = svgDoc.querySelectorAll(".signal-dot");
       dots.forEach((dot) => dot.remove());
       const elements = svgDoc.querySelectorAll("path[id], line[id], rect[id]");
-      
+
       if (elements.length === 0) {
         console.warn("No SVG elements found with IDs - verify SVG structure");
         updateLog("Warning: SVG visualization may not be properly loaded");
       }
-      
+
       elements.forEach((el) => {
         el.classList.remove("path-highlight", "block-highlight");
         el.style.stroke =
           el.tagName.toLowerCase() === "rect" ? "#555555" : "#aaaaaa";
-        el.style.strokeWidth = el.tagName.toLowerCase() === "rect" ? "1" : "1.5";
+        el.style.strokeWidth =
+          el.tagName.toLowerCase() === "rect" ? "1" : "1.5";
         el.style.fill =
           el.tagName.toLowerCase() === "rect"
             ? "rgba(200, 200, 200, 0.05)"
             : "none";
         el.style.transition = "none";
       });
-      
+
       setTimeout(() => {
         elements.forEach((el) => {
           el.style.transition =
@@ -600,14 +637,14 @@ document.head.appendChild(emergencyStyles);
       console.warn("Cannot add missing IDs - SVG document not available");
       return false;
     }
-    
+
     // Check if we already have elements with IDs
     const elementsWithId = svgDoc.querySelectorAll("[id]");
     if (elementsWithId.length > 0) {
       console.log("SVG already has elements with IDs, not modifying");
       return false;
     }
-    
+
     try {
       // Find likely elements and add IDs
       const rects = svgDoc.querySelectorAll("rect");
@@ -615,31 +652,47 @@ document.head.appendChild(emergencyStyles);
         // Sort rectangles by x position (left to right)
         const rectArray = Array.from(rects);
         rectArray.sort((a, b) => {
-          return parseFloat(a.getAttribute("x") || 0) - parseFloat(b.getAttribute("x") || 0);
+          return (
+            parseFloat(a.getAttribute("x") || 0) -
+            parseFloat(b.getAttribute("x") || 0)
+          );
         });
-        
+
         // Assign IDs to first few rectangles as common components
-        const commonIds = ["PC", "InstructionMemory", "Registers", "ALU", "DataMemory", "Control"];
-        rectArray.slice(0, Math.min(rectArray.length, commonIds.length)).forEach((rect, i) => {
-          rect.setAttribute("id", commonIds[i]);
-          console.log(`Added ID "${commonIds[i]}" to rectangle at (${rect.getAttribute("x")}, ${rect.getAttribute("y")})`);
-        });
-        
+        const commonIds = [
+          "PC",
+          "InstructionMemory",
+          "Registers",
+          "ALU",
+          "DataMemory",
+          "Control",
+        ];
+        rectArray
+          .slice(0, Math.min(rectArray.length, commonIds.length))
+          .forEach((rect, i) => {
+            rect.setAttribute("id", commonIds[i]);
+            console.log(
+              `Added ID "${commonIds[i]}" to rectangle at (${rect.getAttribute(
+                "x"
+              )}, ${rect.getAttribute("y")})`
+            );
+          });
+
         // Add IDs to paths
         const paths = svgDoc.querySelectorAll("path");
         paths.forEach((path, i) => {
-          path.setAttribute("id", `path-${i+1}`);
+          path.setAttribute("id", `path-${i + 1}`);
         });
-        
+
         // Add IDs to lines
         const lines = svgDoc.querySelectorAll("line");
         lines.forEach((line, i) => {
-          line.setAttribute("id", `line-${i+1}`);
+          line.setAttribute("id", `line-${i + 1}`);
         });
-        
+
         return true;
       }
-      
+
       return false;
     } catch (e) {
       console.error("Error adding missing IDs:", e);
@@ -652,13 +705,13 @@ document.head.appendChild(emergencyStyles);
     const idMappings = {
       // Core components
       "block-pc": "PC",
-      "block-imem": "InstructionMemory", 
+      "block-imem": "InstructionMemory",
       "block-adder1": "Adder1",
       "block-control": "Control",
       "block-registers": "Registers",
       "block-alu": "ALU",
       "block-dmem": "DataMemory",
-      
+
       // Paths
       "path-pc-imem": "pc-to-imem",
       "path-pc-adder1": "pc-to-adder1",
@@ -668,16 +721,15 @@ document.head.appendChild(emergencyStyles);
       "path-wb-regwrite": "wb-to-regwrite",
       "path-alu-mux3-in0": "alu-to-mux3",
       "path-mux4-pc": "mux4-to-pc",
-      
+
       // Control lines
       "control-regwrite-enable": "control-regwrite",
       "mux-memtoreg-in0": "memtoreg-input0",
-      "mux-pcsrc-in0": "pcsrc-input0"
+      "mux-pcsrc-in0": "pcsrc-input0",
     };
-    
+
     return idMappings[id] || id; // Return mapped ID or original
   }
-
 
   function createSignalBit(svgDoc, value) {
     /* Unchanged */
@@ -744,17 +796,17 @@ document.head.appendChild(emergencyStyles);
       console.warn("Cannot apply highlights - SVG document not available");
       return;
     }
-    
+
     if (!stepData) {
       console.warn("Cannot apply highlights - Step data is missing");
       return;
     }
-    
+
     resetAllSvgStyles();
-    
+
     let foundElements = 0;
     let missingElements = 0;
-  
+
     // Apply block highlights with mapping
     (stepData.active_blocks || []).forEach((id) => {
       const mappedId = mapSvgId(id);
@@ -771,7 +823,7 @@ document.head.appendChild(emergencyStyles);
         console.warn(`SVG Block ID not found: ${id} (mapped to ${mappedId})`);
       }
     });
-  
+
     // Apply path highlights with mapping
     (stepData.active_paths || []).forEach((id) => {
       const mappedId = mapSvgId(id);
@@ -787,23 +839,31 @@ document.head.appendChild(emergencyStyles);
         console.warn(`SVG Path ID not found: ${id} (mapped to ${mappedId})`);
       }
     });
-    
+
     // Log statistics about highlight application
     if (missingElements > 0) {
-      console.warn(`Missing ${missingElements} SVG elements for this step. Found: ${foundElements}`);
+      console.warn(
+        `Missing ${missingElements} SVG elements for this step. Found: ${foundElements}`
+      );
       if (foundElements === 0) {
-        updateLog("Warning: Visualization not updating - SVG element IDs may not match simulation");
-        svgStatus.textContent = `SVG: 0/${missingElements + foundElements} elements found`;
+        updateLog(
+          "Warning: Visualization not updating - SVG element IDs may not match simulation"
+        );
+        svgStatus.textContent = `SVG: 0/${
+          missingElements + foundElements
+        } elements found`;
         svgStatus.style.backgroundColor = "rgba(255,0,0,0.7)";
       } else {
-        svgStatus.textContent = `SVG: ${foundElements}/${missingElements + foundElements} elements found`;
+        svgStatus.textContent = `SVG: ${foundElements}/${
+          missingElements + foundElements
+        } elements found`;
         svgStatus.style.backgroundColor = "rgba(255,165,0,0.7)";
       }
     } else if (foundElements > 0) {
       svgStatus.textContent = `SVG: All ${foundElements} elements found`;
       svgStatus.style.backgroundColor = "rgba(0,128,0,0.7)";
     }
-  
+
     // Handle animations with mapping
     if (showAnimationsToggle.checked && stepData.animated_signals) {
       stepData.animated_signals.forEach((signal) => {
@@ -813,11 +873,13 @@ document.head.appendChild(emergencyStyles);
           animateSignalBits(pathElement, signal, svgDoc);
           console.log(`Animating signal: ${signal.path_id} → ${mappedId}`);
         } else {
-          console.warn(`Animation path ID not found: ${signal.path_id} (mapped to ${mappedId})`);
+          console.warn(
+            `Animation path ID not found: ${signal.path_id} (mapped to ${mappedId})`
+          );
         }
       });
     }
-  
+
     // Control signals update
     const signals = stepData.control_signals || {};
     knownControlSignals.forEach((signalName) => {
@@ -991,7 +1053,7 @@ document.head.appendChild(emergencyStyles);
 
   async function handleSingleMicroStep() {
     /* Unchanged */
-    
+
     if (!simulationLoaded) return "error";
     if (!svgDoc) {
       console.warn("SVG document not ready - attempting to reload");
@@ -999,7 +1061,9 @@ document.head.appendChild(emergencyStyles);
         svgDoc = svgObject.contentDocument;
         if (!svgDoc) {
           console.error("Could not access SVG document");
-          updateLog("Warning: Visualization not available - SVG document can't be accessed");
+          updateLog(
+            "Warning: Visualization not available - SVG document can't be accessed"
+          );
         }
       } catch (e) {
         console.error("Error accessing SVG document during step:", e);
@@ -1209,67 +1273,73 @@ document.head.appendChild(emergencyStyles);
     }
   }
   // --- End Helper Functions ---
-  const debugSvgButton = document.createElement('button');
-debugSvgButton.textContent = "Debug SVG";
-debugSvgButton.style = "position:fixed; bottom:45px; right:10px; padding:5px; background:#2196F3; color:white; border:none; border-radius:3px; cursor:pointer; z-index:1001;";
-document.body.appendChild(debugSvgButton);
+  const debugSvgButton = document.createElement("button");
+  debugSvgButton.textContent = "Debug SVG";
+  debugSvgButton.style =
+    "position:fixed; bottom:45px; right:10px; padding:5px; background:#2196F3; color:white; border:none; border-radius:3px; cursor:pointer; z-index:1001;";
+  document.body.appendChild(debugSvgButton);
 
-// Debug SVG button handler
-debugSvgButton.addEventListener('click', () => {
-  try {
-    console.log("SVG object:", svgObject);
-    
-    if (!svgObject) {
-      alert("SVG object reference not found!");
-      return;
-    }
-    
-    const svgSrc = svgObject.getAttribute("data");
-    console.log(`SVG source: ${svgSrc || "Not set!"}`);
-    
-    if (!svgDoc) {
-      alert("SVG document not loaded! Attempting to load it now...");
-      try {
-        svgDoc = svgObject.contentDocument;
-      } catch (e) {
-        alert(`Failed to load SVG document: ${e.message}`);
+  // Debug SVG button handler
+  debugSvgButton.addEventListener("click", () => {
+    try {
+      console.log("SVG object:", svgObject);
+
+      if (!svgObject) {
+        alert("SVG object reference not found!");
         return;
       }
-    }
-    
-    if (!svgDoc || !svgDoc.documentElement) {
-      alert("Could not access SVG document or it has no root element");
-      return;
-    }
-    
-    // Test SVG with a visual indicator
-    try {
-      // Add a test rect to see if SVG is accessible
-      const testRect = svgDoc.createElementNS("http://www.w3.org/2000/svg", "rect");
-      testRect.setAttribute("x", "10");
-      testRect.setAttribute("y", "10");
-      testRect.setAttribute("width", "50");
-      testRect.setAttribute("height", "50");
-      testRect.setAttribute("fill", "rgba(255,0,0,0.5)");
-      testRect.setAttribute("id", "debug-test-rect");
-      svgDoc.documentElement.appendChild(testRect);
-      
-      // Set a timeout to remove the rect after 3 seconds
-      setTimeout(() => {
-        const rect = svgDoc.getElementById("debug-test-rect");
-        if (rect && rect.parentNode) {
-          rect.parentNode.removeChild(rect);
+
+      const svgSrc = svgObject.getAttribute("data");
+      console.log(`SVG source: ${svgSrc || "Not set!"}`);
+
+      if (!svgDoc) {
+        alert("SVG document not loaded! Attempting to load it now...");
+        try {
+          svgDoc = svgObject.contentDocument;
+        } catch (e) {
+          alert(`Failed to load SVG document: ${e.message}`);
+          return;
         }
-      }, 3000);
-      
-      alert("Added a red square to the SVG for 3 seconds. If you can see it, SVG manipulation is working.");
+      }
+
+      if (!svgDoc || !svgDoc.documentElement) {
+        alert("Could not access SVG document or it has no root element");
+        return;
+      }
+
+      // Test SVG with a visual indicator
+      try {
+        // Add a test rect to see if SVG is accessible
+        const testRect = svgDoc.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect"
+        );
+        testRect.setAttribute("x", "10");
+        testRect.setAttribute("y", "10");
+        testRect.setAttribute("width", "50");
+        testRect.setAttribute("height", "50");
+        testRect.setAttribute("fill", "rgba(255,0,0,0.5)");
+        testRect.setAttribute("id", "debug-test-rect");
+        svgDoc.documentElement.appendChild(testRect);
+
+        // Set a timeout to remove the rect after 3 seconds
+        setTimeout(() => {
+          const rect = svgDoc.getElementById("debug-test-rect");
+          if (rect && rect.parentNode) {
+            rect.parentNode.removeChild(rect);
+          }
+        }, 3000);
+
+        alert(
+          "Added a red square to the SVG for 3 seconds. If you can see it, SVG manipulation is working."
+        );
+      } catch (e) {
+        alert(`Failed to modify SVG: ${e.message}`);
+      }
     } catch (e) {
-      alert(`Failed to modify SVG: ${e.message}`);
+      alert(`SVG debug error: ${e.message}`);
     }
-  } catch (e) {
-    alert(`SVG debug error: ${e.message}`);
-  }
-});
+  });
   // --- Event Listeners ---
 
   svgObject.addEventListener("load", () => {
@@ -1277,57 +1347,62 @@ debugSvgButton.addEventListener('click', () => {
     try {
       // Clear previous reference
       svgDoc = null;
-      
+
       // Get fresh reference
       svgDoc = svgObject.contentDocument;
       const svgSrc = svgObject.getAttribute("data");
       console.log("SVG source:", svgSrc);
-      
+
       if (!svgSrc) {
         svgStatus.textContent = "SVG: Missing source path";
         svgStatus.style.backgroundColor = "rgba(255,0,0,0.7)";
         throw new Error("SVG object has no 'data' attribute");
       }
-      
+
       if (!svgDoc || !svgDoc.documentElement) {
         svgStatus.textContent = "SVG: Failed to load";
         svgStatus.style.backgroundColor = "rgba(255,0,0,0.7)";
         throw new Error("SVG document is null or has no documentElement");
       }
-      
+
       // Successfully loaded
       svgStatus.textContent = "SVG: Loaded";
       svgStatus.style.backgroundColor = "rgba(0,128,0,0.7)";
       console.log("SVG document accessed successfully");
-      
+
       // List all elements with IDs
       const elementsWithId = svgDoc.querySelectorAll("[id]");
       console.log(`Total SVG elements with IDs: ${elementsWithId.length}`);
-      
+
       if (elementsWithId.length === 0) {
         svgStatus.textContent = "SVG: No elements with IDs";
         svgStatus.style.backgroundColor = "rgba(255,165,0,0.7)";
-        
+
         // Try to check if SVG has any content at all
         const totalElements = svgDoc.querySelectorAll("*").length;
-        console.log(`Total SVG elements (with or without IDs): ${totalElements}`);
-        
+        console.log(
+          `Total SVG elements (with or without IDs): ${totalElements}`
+        );
+
         if (totalElements < 5) {
           console.error("SVG appears to be empty or invalid");
         } else {
           console.warn("SVG has content but no IDs - attempting to add IDs");
-          if (addMissingIds()) {  // Call our new function here
+          if (addMissingIds()) {
+            // Call our new function here
             svgStatus.textContent = "SVG: Added missing IDs";
             svgStatus.style.backgroundColor = "rgba(255,165,0,0.7)";
             // Now check again for IDs
             const newElementsWithId = svgDoc.querySelectorAll("[id]");
-            console.log(`After adding, SVG has ${newElementsWithId.length} elements with IDs`);
+            console.log(
+              `After adding, SVG has ${newElementsWithId.length} elements with IDs`
+            );
           }
         }
       } else {
         // Log all available IDs
         console.log("Available SVG element IDs:");
-        elementsWithId.forEach(el => {
+        elementsWithId.forEach((el) => {
           console.log(`${el.id} (${el.tagName.toLowerCase()})`);
         });
       }
@@ -1530,61 +1605,70 @@ debugSvgButton.addEventListener('click', () => {
   function initializeUI() {
     // Fix the right panel first
     fixRightPanel();
-    
+
     // Get updated references
     const refs = updateTabReferences();
-    
+
     setSimulationState(false); // Start in non-loaded state
     updateMicroStepDisplay(-1, "Idle"); // Set initial micro-step display
-  
+
     // Set initial placeholder text for structured displays
     if (refs.registerDisplayGrid)
-      refs.registerDisplayGrid.innerHTML = "<div>(Load program or upload file to view registers)</div>";
+      refs.registerDisplayGrid.innerHTML =
+        "<div>(Load program or upload file to view registers)</div>";
     if (refs.pcValueDisplay) refs.pcValueDisplay.textContent = "N/A";
     initializeControlSignalsDisplay();
     if (refs.memoryTabContent)
-      refs.memoryTabContent.textContent = "(Load program or upload file to view memory)";
+      refs.memoryTabContent.textContent =
+        "(Load program or upload file to view memory)";
     if (refs.logTabContent)
-      refs.logTabContent.textContent = "Load a program using the 'Compile Code' button or 'Upload File'.\n";
-  
+      refs.logTabContent.textContent =
+        "Load a program using the 'Compile Code' button or 'Upload File'.\n";
+
     // Activate tab button click handlers
-    document.querySelectorAll('.tab-button').forEach(button => {
-      button.addEventListener('click', function() {
-        const targetTabId = this.getAttribute('data-tab');
-        const targetPanelId = this.getAttribute('data-panel');
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", function () {
+        const targetTabId = this.getAttribute("data-tab");
+        const targetPanelId = this.getAttribute("data-panel");
         if (!targetTabId || !targetPanelId) return;
-        
-        const parentPanel = document.getElementById(`tabs-panel-${targetPanelId}`);
+
+        const parentPanel = document.getElementById(
+          `tabs-panel-${targetPanelId}`
+        );
         if (!parentPanel) return;
-        
+
         // Deactivate all buttons in this panel
-        parentPanel.querySelectorAll('.tab-button').forEach(btn => {
-          btn.classList.remove('active');
+        parentPanel.querySelectorAll(".tab-button").forEach((btn) => {
+          btn.classList.remove("active");
         });
-        
+
         // Hide all content in this panel
-        parentPanel.querySelectorAll('.tab-content').forEach(content => {
-          content.style.display = 'none';
-          content.classList.remove('active');
+        parentPanel.querySelectorAll(".tab-content").forEach((content) => {
+          content.style.display = "none";
+          content.classList.remove("active");
         });
-        
+
         // Activate this button
-        this.classList.add('active');
-        
+        this.classList.add("active");
+
         // Show target content
         const targetContent = document.getElementById(`tab-${targetTabId}`);
         if (targetContent) {
-          targetContent.style.display = 'block';
-          targetContent.classList.add('active');
+          targetContent.style.display = "block";
+          targetContent.classList.add("active");
         }
       });
     });
-    
+
     // Activate first tabs in each panel
-    const firstTopTabButton = document.querySelector('#tabs-panel-top .tab-button');
+    const firstTopTabButton = document.querySelector(
+      "#tabs-panel-top .tab-button"
+    );
     if (firstTopTabButton) firstTopTabButton.click();
-    
-    const firstBottomTabButton = document.querySelector('#tabs-panel-bottom .tab-button');
+
+    const firstBottomTabButton = document.querySelector(
+      "#tabs-panel-bottom .tab-button"
+    );
     if (firstBottomTabButton) firstBottomTabButton.click();
   }
 
@@ -1592,82 +1676,88 @@ debugSvgButton.addEventListener('click', () => {
 
   setTimeout(() => {
     console.log("Applying final right panel fix...");
-    
+
     // Force the right column to appear with very specific styles
-    const rightColumn = document.getElementById('right-column');
+    const rightColumn = document.getElementById("right-column");
     if (rightColumn) {
       Object.assign(rightColumn.style, {
-        display: 'flex',
-        flex: '0 0 350px',
-        minWidth: '280px',
-        maxWidth: '400px',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        border: '2px solid red' // Temporary visual indicator
+        display: "flex",
+        flex: "0 0 350px",
+        minWidth: "280px",
+        maxWidth: "400px",
+        flexDirection: "column",
+        overflow: "hidden",
+        border: "2px solid red", // Temporary visual indicator
       });
     }
-    
+
     // Force display of panels
-    const topPanel = document.getElementById('tabs-panel-top');
-    const bottomPanel = document.getElementById('tabs-panel-bottom');
-    
+    const topPanel = document.getElementById("tabs-panel-top");
+    const bottomPanel = document.getElementById("tabs-panel-bottom");
+
     if (topPanel) {
       Object.assign(topPanel.style, {
-        display: 'flex',
-        flex: '1',
-        flexDirection: 'column',
-        minHeight: '0',
-        overflow: 'auto'
+        display: "flex",
+        flex: "1",
+        flexDirection: "column",
+        minHeight: "0",
+        overflow: "auto",
       });
     }
-    
+
     if (bottomPanel) {
       Object.assign(bottomPanel.style, {
-        display: 'flex',
-        flex: '1',
-        flexDirection: 'column',
-        minHeight: '0',
-        overflow: 'auto'
+        display: "flex",
+        flex: "1",
+        flexDirection: "column",
+        minHeight: "0",
+        overflow: "auto",
       });
     }
-    
+
     // Force display of tab containers
-    const topTabsContainer = document.getElementById('status-tabs-top');
-    const bottomTabsContainer = document.getElementById('status-tabs-bottom');
-    
+    const topTabsContainer = document.getElementById("status-tabs-top");
+    const bottomTabsContainer = document.getElementById("status-tabs-bottom");
+
     if (topTabsContainer) {
       Object.assign(topTabsContainer.style, {
-        display: 'flex',
-        flex: '1',
-        flexDirection: 'column',
-        overflow: 'hidden'
+        display: "flex",
+        flex: "1",
+        flexDirection: "column",
+        overflow: "hidden",
       });
     }
-    
+
     if (bottomTabsContainer) {
       Object.assign(bottomTabsContainer.style, {
-        display: 'flex',
-        flex: '1',
-        flexDirection: 'column',
-        overflow: 'hidden'
+        display: "flex",
+        flex: "1",
+        flexDirection: "column",
+        overflow: "hidden",
       });
     }
-    
+
     // Force active tab content to be visible
-    const activeTabContents = document.querySelectorAll('.tab-content.active');
-    activeTabContents.forEach(el => {
-      el.style.display = 'block';
+    const activeTabContents = document.querySelectorAll(".tab-content.active");
+    activeTabContents.forEach((el) => {
+      el.style.display = "block";
     });
-    
+
     console.log("Final right panel fix applied");
-    
+
     // Check if content is actually visible
     setTimeout(() => {
-      const registerGrid = document.getElementById('register-display-grid');
-      const logContent = document.getElementById('tab-log');
-      
-      console.log("Register grid visible:", registerGrid?.offsetHeight > 0 ? "Yes" : "No");
-      console.log("Log content visible:", logContent?.offsetHeight > 0 ? "Yes" : "No");
+      const registerGrid = document.getElementById("register-display-grid");
+      const logContent = document.getElementById("tab-log");
+
+      console.log(
+        "Register grid visible:",
+        registerGrid?.offsetHeight > 0 ? "Yes" : "No"
+      );
+      console.log(
+        "Log content visible:",
+        logContent?.offsetHeight > 0 ? "Yes" : "No"
+      );
     }, 100);
   }, 1000);
 }); // End DOMContentLoaded
