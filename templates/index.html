@@ -273,6 +273,8 @@
         max-height: 100%;
         object-fit: contain;
         display: block;
+        position: relative;
+        z-index: 1;
       }
       /* ... datapath svg styles ... */
       #datapath-svg-object .path-highlight {
@@ -504,14 +506,12 @@
           <div id="datapath-area">
             <h2>CPU LEGv8</h2>
             <object
-            id="datapath-svg-object"
-            data="{{ url_for('static', filename='datapath.svg') }}"
-            type="image/svg+xml"
-            width="800" 
-            height="600"
-          >
-            SVG Overlay not loaded.
-          </object>
+              id="datapath-svg-object"
+              data="{{ url_for('static', filename='test2.svg') }}"
+              type="image/svg+xml"
+            >
+              SVG Overlay not loaded.
+            </object>
             </div>
           </div>
         </div>

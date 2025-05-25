@@ -601,7 +601,7 @@
       highlightedElements.clear();
       const dots = svgDoc.querySelectorAll(".signal-dot");
       dots.forEach((dot) => dot.remove());
-      const elements = svgDoc.querySelectorAll("path[id], line[id], rect[id]");
+      const elements = svgDoc.querySelectorAll("path[id], line[id], rect[id], g[id]");
 
       if (elements.length === 0) {
         console.warn("No SVG elements found with IDs - verify SVG structure");
@@ -609,22 +609,42 @@
       }
 
       elements.forEach((el) => {
+        // Remove highlight classes
         el.classList.remove("path-highlight", "block-highlight");
-        el.style.stroke =
-          el.tagName.toLowerCase() === "rect" ? "#555555" : "#aaaaaa";
-        el.style.strokeWidth =
-          el.tagName.toLowerCase() === "rect" ? "1" : "1.5";
-        el.style.fill =
-          el.tagName.toLowerCase() === "rect"
-            ? "rgba(200, 200, 200, 0.05)"
-            : "none";
-        el.style.transition = "none";
+        
+        // Handle group elements
+        if (el.tagName.toLowerCase() === 'g') {
+          const children = el.querySelectorAll('rect, path, circle, ellipse, line');
+          children.forEach(child => {
+            child.classList.remove("path-highlight", "block-highlight");
+            // Reset to original styles by removing inline styles
+            child.style.stroke = "";
+            child.style.strokeWidth = "";
+            child.style.fill = "";
+            child.style.transition = "none";
+          });
+        } else {
+          // Reset individual elements by removing inline styles
+          el.style.stroke = "";
+          el.style.strokeWidth = "";
+          el.style.fill = "";
+          el.style.transition = "none";
+        }
       });
 
+      // Re-enable transitions after reset
       setTimeout(() => {
         elements.forEach((el) => {
-          el.style.transition =
-            "stroke 0.15s linear, stroke-width 0.15s linear, fill 0.15s linear";
+          if (el.tagName.toLowerCase() === 'g') {
+            const children = el.querySelectorAll('rect, path, circle, ellipse, line');
+            children.forEach(child => {
+              child.style.transition =
+                "stroke 0.15s linear, stroke-width 0.15s linear, fill 0.15s linear";
+            });
+          } else {
+            el.style.transition =
+              "stroke 0.15s linear, stroke-width 0.15s linear, fill 0.15s linear";
+          }
         });
       }, 50);
     } catch (err) {
@@ -701,34 +721,206 @@
   }
 
   function mapSvgId(id) {
-    // Map between expected backend IDs and actual SVG element IDs
-    const idMappings = {
-      // Core components
-      "block-pc": "PC",
-      "block-imem": "InstructionMemory",
-      "block-adder1": "Adder1",
-      "block-control": "Control",
-      "block-registers": "Registers",
-      "block-alu": "ALU",
-      "block-dmem": "DataMemory",
+    // Enhanced LEGv8-specific mapping between backend IDs and actual SVG element IDs
+    const legv8IdMappings = {
+      // === CORE COMPONENTS ===
+      "block-pc": "pc-register",
+      "block-imem": "instruction-memory", 
+      "block-control": "control-unit",
+      "block-registers": "register-file",
+      "block-alu": "alu",
+      "block-dmem": "data-memory",
+      "block-signext": "sign-extend",
+      "block-alucontrol": "alu-control",
+      
+      // === PC AND ADDERS ===
+      "block-pcadder": "pc-adder",
+      "block-adder1": "pc-adder",
+      "block-branchadder": "branch-adder",
+      "block-shiftleft": "shift-left",
+      
+      // === LOGIC GATES ===
+      "block-andgate": "and-gate",
+      "block-orgate": "or-gate",
+      
+      // === MULTIPLEXERS ===
+      "block-reg2locmux": "register-mux",      // Select read register 2
+      "block-alusrcmux": "alu-src-mux",        // Select ALU input B  
+      "block-memtoregmux": "mem-to-reg-mux",   // Select write data source
+      "block-pcsrcmux": "pc-source-mux",       // Select next PC
 
-      // Paths
-      "path-pc-imem": "pc-to-imem",
-      "path-pc-adder1": "pc-to-adder1",
-      "path-adder1-mux4-in0": "adder1-to-mux4",
-      "path-instr-regwriteaddr": "instruction-to-registerwrite",
-      "path-mux3-wb": "mux3-to-wb",
-      "path-wb-regwrite": "wb-to-regwrite",
-      "path-alu-mux3-in0": "alu-to-mux3",
-      "path-mux4-pc": "mux4-to-pc",
-
-      // Control lines
-      "control-regwrite-enable": "control-regwrite",
-      "mux-memtoreg-in0": "memtoreg-input0",
-      "mux-pcsrc-in0": "pcsrc-input0",
+      // === INSTRUCTION FETCH PATHS ===
+      "path-pc-imem": "data-paths",
+      "path-pc-pcadder": "data-paths",
+      "path-pcadder-pcmux": "data-paths",
+      "path-pc-adder1": "data-paths",
+      "path-adder1-mux4-in0": "data-paths",
+      
+      // === INSTRUCTION DECODE PATHS ===
+      "path-instr-control": "data-paths",      // [31:21] to Control Unit
+      "path-instr-reg1": "data-paths",         // [9:5] to Read Reg 1
+      "path-instr-reg2mux": "data-paths",      // [20:16]/[4:0] to Reg2Loc MUX
+      "path-instr-writereg": "data-paths",     // [4:0] to Write Register
+      "path-instr-signext": "data-paths",      // [31:0] to Sign Extend
+      "path-instr-alucontrol": "data-paths",   // [31:21] to ALU Control
+      "path-instr-regwriteaddr": "data-paths",
+      
+      // === EXECUTE PATHS ===
+      "path-reg1-alu": "data-paths",           // Read Data 1 to ALU
+      "path-reg2-alumux": "data-paths",        // Read Data 2 to ALU Src MUX
+      "path-signext-alumux": "data-paths",     // Sign Extend to ALU Src MUX
+      "path-alumux-alu": "data-paths",         // MUX output to ALU
+      "path-registers-alu": "data-paths",
+      "path-signext-alu": "data-paths",
+      "path-signext-shiftleft": "data-paths",  // For branch target
+      "path-shiftleft-branchadder": "data-paths",
+      
+      // === MEMORY PATHS ===
+      "path-alu-dmem-addr": "data-paths",      // ALU result to Data Memory address
+      "path-reg2-dmem-data": "data-paths",     // Read Data 2 to Data Memory write data
+      "path-dmem-memtoregmux": "data-paths",   // Data Memory to MEM-to-REG MUX
+      "path-alu-dmem": "data-paths",
+      "path-dmem-wb": "data-paths",
+      
+      // === WRITE BACK PATHS ===
+      "path-alu-memtoregmux": "data-paths",    // ALU result to MEM-to-REG MUX
+      "path-memtoregmux-writereg": "data-paths", // MUX output to Write Register
+      "path-mux3-wb": "data-paths",
+      "path-wb-regwrite": "data-paths",
+      "path-alu-mux3-in0": "data-paths",
+      "path-mux4-pc": "data-paths",
+      
+      // === CONTROL SIGNALS ===
+      "control-regwrite": "control-lines",      // Enable register write
+      "control-regwrite-enable": "control-lines",
+      "control-alusrc": "control-lines",        // Select ALU source B
+      "control-memread": "control-lines",       // Enable memory read
+      "control-memwrite": "control-lines",      // Enable memory write  
+      "control-memtoreg": "control-lines",      // Select write data source
+      "control-branch": "control-lines",        // Enable conditional branch
+      "control-uncondbranch": "control-lines",  // Enable unconditional branch
+      "control-aluop": "control-lines",         // ALU operation control
+      "control-reg2loc": "control-lines",       // Select second read register
     };
 
-    return idMappings[id] || id; // Return mapped ID or original
+    return legv8IdMappings[id] || id; // Return mapped ID or original
+  }
+
+  // LEGv8-specific highlighting patterns based on instruction type and pipeline stage
+  function detectInstructionType(instrStr) {
+    if (!instrStr) return "UNKNOWN";
+    
+    const instr = instrStr.toUpperCase().trim();
+    
+    // R-Type instructions (register-register operations)
+    if (/^(ADD|SUB|AND|ORR|EOR|LSL|LSR|ASR)\s+X/.test(instr)) return "R-TYPE";
+    
+    // I-Type instructions (immediate operations)
+    if (/^(ADDI|SUBI|ANDI|ORRI|EORI)\s+X/.test(instr)) return "I-TYPE";
+    
+    // Load instructions
+    if (/^LDUR\s+X/.test(instr)) return "LOAD";
+    
+    // Store instructions
+    if (/^STUR\s+X/.test(instr)) return "STORE";
+    
+    // Branch instructions
+    if (/^(CBZ|CBNZ|B\.EQ|B\.NE|B\.LT|B\.LE|B\.GT|B\.GE|B)\s/.test(instr)) return "BRANCH";
+    
+    // Move instructions
+    if (/^(MOVZ|MOVK)\s+X/.test(instr)) return "MOVE";
+    
+    return "UNKNOWN";
+  }
+
+  function getLegv8HighlightPattern(instructionType, stage) {
+    const patterns = {
+      // === R-TYPE INSTRUCTIONS (ADD, SUB, AND, OR) ===
+      "R-TYPE": {
+        "fetch": {
+          active_blocks: ["block-pc", "block-imem", "block-pcadder"],
+          active_paths: ["path-pc-imem", "path-pc-pcadder"],
+          description: "Fetch instruction from memory"
+        },
+        "decode": {
+          active_blocks: ["block-control", "block-registers", "block-reg2locmux"],
+          active_paths: ["path-instr-control", "path-instr-reg1", "path-instr-reg2mux"],
+          control_signals: ["RegWrite", "ALUSrc", "ALUOp"],
+          description: "Decode instruction and read registers"
+        },
+        "execute": {
+          active_blocks: ["block-alu", "block-alucontrol", "block-alusrcmux"],
+          active_paths: ["path-reg1-alu", "path-reg2-alumux", "path-alumux-alu"],
+          description: "Perform ALU operation"
+        },
+        "memory": {
+          // R-type doesn't use memory
+          active_blocks: [],
+          active_paths: [],
+          description: "Memory stage (not used for R-type)"
+        },
+        "writeback": {
+          active_blocks: ["block-registers", "block-memtoregmux"],
+          active_paths: ["path-alu-memtoregmux", "path-memtoregmux-writereg"],
+          description: "Write result back to register"
+        }
+      },
+      
+      // === LOAD INSTRUCTIONS (LDUR) ===
+      "LOAD": {
+        "memory": {
+          active_blocks: ["block-dmem"],
+          active_paths: ["path-alu-dmem-addr", "path-dmem-memtoregmux"],
+          control_signals: ["MemRead"]
+        }
+      },
+      
+      // === STORE INSTRUCTIONS (STUR) ===
+      "STORE": {
+        "memory": {
+          active_blocks: ["block-dmem"],
+          active_paths: ["path-alu-dmem-addr", "path-reg2-dmem-data"],
+          control_signals: ["MemWrite"]
+        },
+        "writeback": {
+          // Store doesn't write back to register
+          active_blocks: [],
+          active_paths: []
+        }
+      },
+      
+      // === BRANCH INSTRUCTIONS (CBZ, B) ===
+      "BRANCH": {
+        "execute": {
+          active_blocks: ["block-alu", "block-shiftleft", "block-branchadder", "block-andgate"],
+          active_paths: ["path-signext-shiftleft", "path-shiftleft-branchadder"],
+          control_signals: ["Branch"]
+        }
+      }
+    };
+    
+    return patterns[instructionType]?.[stage] || { 
+      active_blocks: [], 
+      active_paths: [], 
+      control_signals: [],
+      description: `${instructionType} ${stage} (pattern not defined)`
+    };
+  }
+
+  // Animation error tracking
+  let animationErrorCount = 0;
+  const MAX_ANIMATION_ERRORS = 3;
+  
+  function handleAnimationError(errorMessage) {
+    animationErrorCount++;
+    console.warn(`Animation error ${animationErrorCount}/${MAX_ANIMATION_ERRORS}: ${errorMessage}`);
+    
+    if (animationErrorCount >= MAX_ANIMATION_ERRORS) {
+      console.warn("Too many animation errors, disabling animations");
+      showAnimationsToggle.checked = false;
+      updateLog("Warning: Animations disabled due to repeated errors");
+      animationErrorCount = 0; // Reset counter
+    }
   }
 
   function createSignalBit(svgDoc, value) {
@@ -743,8 +935,33 @@
   }
 
   function animateSignalBits(pathElement, signal, svgDoc) {
-    /* Unchanged */
-    if (!svgDoc || !pathElement || !signal) return;
+    /* Fixed animation function with error handling */
+    if (!svgDoc || !pathElement || !signal) {
+      console.warn("Missing parameters for signal animation");
+      return;
+    }
+
+    // Validate path element
+    if (!pathElement.getTotalLength) {
+      console.warn("Path element does not support getTotalLength - skipping animation");
+      handleAnimationError("Path element doesn't support getTotalLength");
+      return;
+    }
+
+    try {
+      // Test if path is valid by checking its length
+      const pathLength = pathElement.getTotalLength();
+      if (pathLength <= 0) {
+        console.warn("Path has zero length - skipping animation");
+        handleAnimationError("Path has zero length");
+        return;
+      }
+    } catch (e) {
+      console.warn("Invalid path element for animation:", e.message);
+      handleAnimationError(`Invalid path element: ${e.message}`);
+      return;
+    }
+
     const bitValues = signal.bits || [1];
     const duration = signal.duration || animationSpeed;
     const startDelay = signal.start_delay || 0;
@@ -753,41 +970,57 @@
     bitValues.forEach((bitValue, index) => {
       const bit = createSignalBit(svgDoc, bitValue);
       if (!bit) return;
-      svgDoc.documentElement.appendChild(bit);
-      gsap
-        .timeline({
-          onComplete: () => {
-            if (bit && bit.parentNode) {
-              bit.remove();
+      
+      try {
+        svgDoc.documentElement.appendChild(bit);
+        
+        gsap
+          .timeline({
+            onComplete: () => {
+              if (bit && bit.parentNode) {
+                bit.remove();
+              }
+            },
+            onError: (error) => {
+              console.warn("GSAP animation error:", error);
+              handleAnimationError(`GSAP error: ${error.message || error}`);
+              if (bit && bit.parentNode) {
+                bit.remove();
+              }
             }
-          },
-        })
-        .set(bit, {
-          motionPath: {
-            path: pathElement,
-            align: pathElement,
-            alignOrigin: [0.5, 0.5],
-            start: 0,
-            end: 0,
-          },
-          opacity: 0,
-          immediateRender: true,
-        })
-        .to(bit, {
-          delay: startDelay + index * spacingFactor * duration,
-          opacity: 1,
-          duration: duration,
-          motionPath: {
-            path: pathElement,
-            align: pathElement,
-            alignOrigin: [0.5, 0.5],
-            start: 0,
-            end: 1,
-            autoRotate: false,
-          },
-          ease: "none",
-        })
-        .to(bit, { opacity: 0, duration: 0.05 }, ">-0.05");
+          })
+          .set(bit, {
+            x: 0,
+            y: 0,
+            opacity: 0,
+            immediateRender: true,
+          })
+          .to(bit, {
+            delay: startDelay + index * spacingFactor * duration,
+            opacity: 1,
+            duration: duration,
+            motionPath: {
+              path: pathElement,
+              align: pathElement,
+              alignOrigin: [0.5, 0.5],
+              start: 0,
+              end: 1,
+              autoRotate: false,
+            },
+            ease: "none",
+            onError: (error) => {
+              console.warn("Motion path animation error:", error);
+              handleAnimationError(`Motion path error: ${error.message || error}`);
+            }
+          })
+          .to(bit, { opacity: 0, duration: 0.05 }, ">-0.05");
+      } catch (e) {
+        console.warn("Error creating GSAP animation:", e.message);
+        handleAnimationError(`GSAP creation error: ${e.message}`);
+        if (bit && bit.parentNode) {
+          bit.remove();
+        }
+      }
     });
   }
 
@@ -802,21 +1035,83 @@
       return;
     }
 
+    // Reset all styles before applying new highlights
     resetAllSvgStyles();
+
+    // *** LEGv8-SPECIFIC ENHANCEMENT ***
+    // Determine instruction type and get LEGv8-specific patterns
+    const instrType = detectInstructionType(stepData.current_instruction_string || currentInstructionStr);
+    const stage = stepData.stage?.toLowerCase() || "fetch";
+    const legv8Pattern = getLegv8HighlightPattern(instrType, stage);
+    
+    console.log(`LEGv8 Enhancement: ${instrType} - ${stage.toUpperCase()}`);
+    console.log(`LEGv8 Pattern:`, legv8Pattern);
 
     let foundElements = 0;
     let missingElements = 0;
 
+    // *** COMBINE BACKEND DATA + LEGv8 PATTERNS ***
+    // Merge backend data with LEGv8-specific patterns for more accurate highlighting
+    const allActiveBlocks = [
+      ...(stepData.active_blocks || []),
+      ...(legv8Pattern.active_blocks || [])
+    ];
+    
+    const allActivePaths = [
+      ...(stepData.active_paths || []),
+      ...(legv8Pattern.active_paths || [])
+    ];
+
+    // Remove duplicates
+    const uniqueActiveBlocks = [...new Set(allActiveBlocks)];
+    const uniqueActivePaths = [...new Set(allActivePaths)];
+
+    console.log(`Highlighting ${uniqueActiveBlocks.length} blocks and ${uniqueActivePaths.length} paths`);
+
     // Apply block highlights with mapping
-    (stepData.active_blocks || []).forEach((id) => {
+    uniqueActiveBlocks.forEach((id) => {
       const mappedId = mapSvgId(id);
-      const el = svgDoc.getElementById(mappedId);
+      let el = svgDoc.getElementById(mappedId);
+      
+      // If not found directly, try to find within groups
+      if (!el) {
+        // Look for the element within groups
+        const groups = svgDoc.querySelectorAll('g');
+        for (let group of groups) {
+          if (group.id === mappedId) {
+            el = group;
+            break;
+          }
+          // Also check children within groups
+          const childEl = group.querySelector(`#${mappedId}`);
+          if (childEl) {
+            el = childEl;
+            break;
+          }
+        }
+      }
+      
       if (el) {
         foundElements++;
-        el.classList.add("block-highlight");
-        el.style.fill = "rgba(233, 30, 99, 0.15)";
-        el.style.stroke = "#e91e63";
-        el.style.strokeWidth = "1.5";
+        
+        // Handle group elements differently
+        if (el.tagName.toLowerCase() === 'g') {
+          // Highlight all child elements in the group
+          const children = el.querySelectorAll('rect, path, circle, ellipse');
+          children.forEach(child => {
+            child.classList.add("block-highlight");
+            child.style.fill = "rgba(233, 30, 99, 0.15)";
+            child.style.stroke = "#e91e63";
+            child.style.strokeWidth = "2";
+          });
+        } else {
+          // Single element highlight
+          el.classList.add("block-highlight");
+          el.style.fill = "rgba(233, 30, 99, 0.15)";
+          el.style.stroke = "#e91e63";
+          el.style.strokeWidth = "2";
+        }
+        
         console.log(`Highlighting block: ${id} → ${mappedId}`);
       } else {
         missingElements++;
@@ -824,17 +1119,50 @@
       }
     });
 
-    // Apply path highlights with mapping
-    (stepData.active_paths || []).forEach((id) => {
+    // Apply path highlights with mapping  
+    uniqueActivePaths.forEach((id) => {
       const mappedId = mapSvgId(id);
-      const el = svgDoc.getElementById(mappedId);
-      if (el && el.tagName.toLowerCase() !== "rect") {
+      let el = svgDoc.getElementById(mappedId);
+      
+      // If not found directly, try to find within groups
+      if (!el) {
+        const groups = svgDoc.querySelectorAll('g');
+        for (let group of groups) {
+          if (group.id === mappedId) {
+            el = group;
+            break;
+          }
+          const childEl = group.querySelector(`#${mappedId}`);
+          if (childEl) {
+            el = childEl;
+            break;
+          }
+        }
+      }
+      
+      if (el) {
         foundElements++;
-        el.classList.add("path-highlight");
-        el.style.stroke = "#e91e63";
-        el.style.strokeWidth = "2.5";
+        
+        // Handle group elements differently for paths
+        if (el.tagName.toLowerCase() === 'g') {
+          // Highlight all path elements in the group
+          const paths = el.querySelectorAll('path, line');
+          paths.forEach(path => {
+            if (path.tagName.toLowerCase() !== "rect") {
+              path.classList.add("path-highlight");
+              path.style.stroke = "#e91e63";
+              path.style.strokeWidth = "3";
+            }
+          });
+        } else if (el.tagName.toLowerCase() !== "rect") {
+          // Single path element highlight
+          el.classList.add("path-highlight");
+          el.style.stroke = "#e91e63";
+          el.style.strokeWidth = "3";
+        }
+        
         console.log(`Highlighting path: ${id} → ${mappedId}`);
-      } else if (!el) {
+      } else {
         missingElements++;
         console.warn(`SVG Path ID not found: ${id} (mapped to ${mappedId})`);
       }
@@ -864,14 +1192,41 @@
       svgStatus.style.backgroundColor = "rgba(0,128,0,0.7)";
     }
 
-    // Handle animations with mapping
+    // Handle animations with mapping - Safe animation handling
     if (showAnimationsToggle.checked && stepData.animated_signals) {
       stepData.animated_signals.forEach((signal) => {
         const mappedId = mapSvgId(signal.path_id);
-        const pathElement = svgDoc.getElementById(mappedId);
+        let pathElement = svgDoc.getElementById(mappedId);
+        
+        // If not found directly, try to find within groups
+        if (!pathElement) {
+          const groups = svgDoc.querySelectorAll('g');
+          for (let group of groups) {
+            if (group.id === mappedId) {
+              // Use first path in the group for animation
+              pathElement = group.querySelector('path, line');
+              break;
+            }
+            const childEl = group.querySelector(`#${mappedId}`);
+            if (childEl && (childEl.tagName.toLowerCase() === 'path' || childEl.tagName.toLowerCase() === 'line')) {
+              pathElement = childEl;
+              break;
+            }
+          }
+        }
+        
         if (pathElement) {
-          animateSignalBits(pathElement, signal, svgDoc);
-          console.log(`Animating signal: ${signal.path_id} → ${mappedId}`);
+          // Additional safety check for path validity
+          try {
+            if (pathElement.getTotalLength && pathElement.getTotalLength() > 0) {
+              animateSignalBits(pathElement, signal, svgDoc);
+              console.log(`Animating signal: ${signal.path_id} → ${mappedId}`);
+            } else {
+              console.warn(`Path element found but invalid for animation: ${mappedId}`);
+            }
+          } catch (pathError) {
+            console.warn(`Path element error for ${mappedId}:`, pathError.message);
+          }
         } else {
           console.warn(
             `Animation path ID not found: ${signal.path_id} (mapped to ${mappedId})`
@@ -880,18 +1235,28 @@
       });
     }
 
-    // Control signals update
-    const signals = stepData.control_signals || {};
+    // Control signals update with LEGv8 enhancement
+    const backendSignals = stepData.control_signals || {};
+    const legv8Signals = legv8Pattern.control_signals || [];
+    
     knownControlSignals.forEach((signalName) => {
       const valueSpan = document.getElementById(
         `signal-value-${signalName.toLowerCase()}`
       );
       if (valueSpan) {
-        const value = signals[signalName];
+        // Use backend data if available, otherwise check LEGv8 pattern
+        let value = backendSignals[signalName];
+        
+        // If not in backend data but in LEGv8 pattern, mark as active
+        if (value === undefined && legv8Signals.includes(signalName)) {
+          value = 1; // LEGv8 pattern indicates this signal should be active
+        }
+        
         const displayValue =
           typeof value === "bigint" ? value.toString() : value;
         valueSpan.textContent = displayValue !== undefined ? displayValue : "-";
         valueSpan.classList.remove("active", "inactive", "other");
+        
         if (displayValue === 1 || displayValue === "1") {
           valueSpan.classList.add("active");
         } else if (displayValue === 0 || displayValue === "0") {
@@ -1110,6 +1475,7 @@
         ) {
           updateLog(data.message || "Instruction completed.");
           currentMicroStepIndex = -1;
+          
           const nextPC = parseAddress(data.cpu_state?.pc);
           if (!isNaN(nextPC)) {
             currentInstructionAddr = nextPC;
@@ -1132,8 +1498,8 @@
           stepStatus = "instruction_completed";
         } else if (data.status === "finished_program") {
           updateLog(data.message || "Program finished.");
+          
           setSimulationState(false, false, data.message || "End of program");
-          resetAllSvgStyles();
           highlightLine(-1);
           stepStatus = "finished_program";
         } else {
@@ -1221,42 +1587,68 @@
   }
 
   function startAutoRun() {
-    /* Unchanged */
+    /* Enhanced auto-run with micro-step mode */
     if (isRunning || !simulationLoaded) return;
     isRunning = true;
     setSimulationState(simulationLoaded, true);
-    const baseInterval = showAnimationsToggle.checked ? 600 : 50;
-    const instructionOverhead = showAnimationsToggle.checked ? 100 : 20;
-    const intervalTime = baseInterval + instructionOverhead;
-    console.log(`Starting auto-run with interval: ~${intervalTime}ms`);
+    
+    // Slower intervals for better visualization
+    const microStepInterval = showAnimationsToggle.checked ? 1200 : 400; // Slower for micro-steps
+    const instructionInterval = showAnimationsToggle.checked ? 800 : 200; // Pause between instructions
+    
+    console.log(`Starting auto-run with micro-step interval: ${microStepInterval}ms`);
+    
     const runTick = async () => {
       if (!simulationLoaded || !isRunning) {
         console.log("Auto-run tick: Halting (state changed).");
         return;
       }
-      updateStatus("Running... Executing instruction...");
-      await executeFullInstruction();
-      if (!simulationLoaded) {
-        console.log("Auto-run tick: Halting (sim finished/errored).");
+      
+      updateStatus("Running... Executing micro-step...");
+      
+      try {
+        const stepResult = await handleSingleMicroStep();
+        
+        if (stepResult === "error") {
+          console.log("Auto-run tick: Halting (error occurred).");
+          stopAutoRun();
+          return;
+        } else if (stepResult === "finished_program") {
+          console.log("Auto-run tick: Halting (program finished).");
+          stopAutoRun();
+          return;
+        } else if (stepResult === "instruction_completed") {
+          console.log("Auto-run tick: Instruction completed, brief pause before next...");
+          updateStatus("Running... Instruction completed, continuing...");
+          
+          // Brief pause between instructions
+          if (isRunning && simulationLoaded) {
+            runIntervalId = setTimeout(runTick, instructionInterval);
+          } else {
+            stopAutoRun();
+          }
+        } else if (stepResult === "micro_step_ok") {
+          console.log("Auto-run tick: Micro-step completed, continuing...");
+          updateStatus("Running... Continuing micro-steps...");
+          
+          // Continue with next micro-step
+          if (isRunning && simulationLoaded) {
+            runIntervalId = setTimeout(runTick, microStepInterval);
+          } else {
+            stopAutoRun();
+          }
+        } else {
+          console.warn("Auto-run tick: Unexpected result:", stepResult);
+          stopAutoRun();
+        }
+      } catch (error) {
+        console.error("Auto-run tick error:", error);
+        updateLog(`Auto-run error: ${error.message}`);
         stopAutoRun();
-      } else if (!isRunning) {
-        console.log("Auto-run tick: Halting (paused by user).");
-        stopAutoRun();
-      } else {
-        console.log("Auto-run tick: Instruction completed, continuing run.");
-        updateStatus("Running... Waiting for next tick");
-        scheduleNextTick();
       }
     };
-    const scheduleNextTick = () => {
-      if (isRunning && simulationLoaded) {
-        runIntervalId = setTimeout(runTick, intervalTime);
-      } else {
-        console.log("Auto-run: Not scheduling next tick.");
-        stopAutoRun();
-      }
-    };
-    updateStatus("Running... Starting execution");
+    
+    updateStatus("Running... Starting micro-step execution");
     runTick();
   }
 
@@ -1282,6 +1674,7 @@
   // Debug SVG button handler
   debugSvgButton.addEventListener("click", () => {
     try {
+      console.log("=== SVG DEBUG INFO ===");
       console.log("SVG object:", svgObject);
 
       if (!svgObject) {
@@ -1293,7 +1686,7 @@
       console.log(`SVG source: ${svgSrc || "Not set!"}`);
 
       if (!svgDoc) {
-        alert("SVG document not loaded! Attempting to load it now...");
+        console.log("SVG document not loaded! Attempting to load it now...");
         try {
           svgDoc = svgObject.contentDocument;
         } catch (e) {
@@ -1307,37 +1700,48 @@
         return;
       }
 
-      // Test SVG with a visual indicator
-      try {
-        // Add a test rect to see if SVG is accessible
-        const testRect = svgDoc.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "rect"
-        );
-        testRect.setAttribute("x", "10");
-        testRect.setAttribute("y", "10");
-        testRect.setAttribute("width", "50");
-        testRect.setAttribute("height", "50");
-        testRect.setAttribute("fill", "rgba(255,0,0,0.5)");
-        testRect.setAttribute("id", "debug-test-rect");
-        svgDoc.documentElement.appendChild(testRect);
+      // List all elements with IDs
+      const elementsWithId = svgDoc.querySelectorAll("[id]");
+      console.log(`\n=== ALL SVG ELEMENTS WITH IDs (${elementsWithId.length}) ===`);
+      
+      const idList = [];
+      elementsWithId.forEach((el) => {
+        const info = `${el.id} (${el.tagName.toLowerCase()})`;
+        idList.push(info);
+        console.log(info);
+      });
 
-        // Set a timeout to remove the rect after 3 seconds
-        setTimeout(() => {
-          const rect = svgDoc.getElementById("debug-test-rect");
-          if (rect && rect.parentNode) {
-            rect.parentNode.removeChild(rect);
-          }
-        }, 3000);
+      // Show in alert for easy copying
+      alert(`SVG Elements with IDs:\n\n${idList.join('\n')}\n\nCheck console for more details.`);
 
-        alert(
-          "Added a red square to the SVG for 3 seconds. If you can see it, SVG manipulation is working."
-        );
-      } catch (e) {
-        alert(`Failed to modify SVG: ${e.message}`);
-      }
+      // Test highlight functionality
+      console.log("\n=== TESTING HIGHLIGHT ===");
+      
+      // Try to highlight a few common elements
+      const testIds = ['pc-register', 'control-unit', 'alu', 'data-memory', 'instruction-memory', 'register-file'];
+      testIds.forEach(testId => {
+        const el = svgDoc.getElementById(testId);
+        if (el) {
+          console.log(`✓ Found: ${testId}`);
+          // Apply test highlight
+          el.style.fill = "rgba(255,0,0,0.3)";
+          el.style.stroke = "#ff0000";
+          el.style.strokeWidth = "2";
+          
+          // Remove after 2 seconds
+          setTimeout(() => {
+            el.style.fill = "";
+            el.style.stroke = "";
+            el.style.strokeWidth = "";
+          }, 2000);
+        } else {
+          console.log(`✗ Missing: ${testId}`);
+        }
+      });
+
     } catch (e) {
       alert(`SVG debug error: ${e.message}`);
+      console.error("SVG debug error:", e);
     }
   });
   // --- Event Listeners ---

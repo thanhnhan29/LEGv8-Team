@@ -1,0 +1,322 @@
+﻿<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient definitions -->
+    <linearGradient id="controlGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F4FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8DCF2;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="aluGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFF3E0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD19A;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="registerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F4FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8DCF2;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="pcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F5E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A5D6A7;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="memoryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F8F9FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E9ECEF;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="muxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F1F8E9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C8E6C9;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="signExtendGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F1F8E9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C8E6C9;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="adderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E3F2FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#90CAF9;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="gateGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F9FBE7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DCEDC8;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Arrow marker -->
+    <marker id="arrowhead" markerWidth="6" markerHeight="4" 
+            refX="5" refY="2" orient="auto" fill="#333" viewBox="0 0 6 4">
+      <polygon points="0 0, 6 2, 0 4" />
+    </marker>
+    <marker id="arrowheadBlue" markerWidth="6" markerHeight="4" 
+            refX="5" refY="2" orient="auto" fill="#1976D2" viewBox="0 0 6 4">
+      <polygon points="0 0, 6 2, 0 4" />
+    </marker>
+    <marker id="arrowheadGray" markerWidth="6" markerHeight="4" 
+            refX="5" refY="2" orient="auto" fill="#888" viewBox="0 0 6 4">
+      <polygon points="0 0, 6 2, 0 4" />
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect x="0" y="0" width="1200" height="800" fill="#f8f9fa" />
+  
+  <!-- Components -->
+
+  <!-- PC Register -->
+  <g id="pc-register">
+    <rect x="150" y="475" width="80" height="50" fill="url(#pcGradient)" stroke="#4CAF50" stroke-width="2"/>
+    <text x="190" y="505" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">PC</text>
+  </g>
+  
+  <!-- PC Adder (PC+4) -->
+  <g id="pc-adder">
+    <rect x="240" y="135" width="70" height="40" fill="url(#adderGradient)" stroke="#2196F3" stroke-width="2" rx="5"/>
+    <text x="275" y="160" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">Add</text>
+  </g>
+  
+  <!-- Constant 4 -->
+  <g id="constant-4">
+    <text x="220" y="140" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#1976D2">4</text>
+  </g>
+  
+  <!-- Instruction Memory -->
+  <g id="instruction-memory">
+    <rect x="280" y="435" width="120" height="130" fill="url(#memoryGradient)" stroke="#6C757D" stroke-width="2"/>
+    <text x="340" y="455" text-anchor="middle" font-family="Arial" font-size="10">Read</text>
+    <text x="340" y="468" text-anchor="middle" font-family="Arial" font-size="10">address</text>
+    <line x1="280" y1="480" x2="400" y2="480" stroke="#6C757D" stroke-width="1"/>
+    <text x="340" y="500" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">Instruction</text>
+    <text x="340" y="513" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">[31-0]</text>
+    <line x1="280" y1="523" x2="400" y2="523" stroke="#6C757D" stroke-width="1"/>
+    <text x="340" y="543" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">Instruction</text>
+    <text x="340" y="556" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">memory</text>
+  </g>
+
+  <!-- Control Unit -->
+  <g id="control-unit">
+    <rect x="460" y="175" width="180" height="140" fill="url(#controlGradient)" stroke="#1976D2" stroke-width="2" rx="10"/>
+    <text x="550" y="200" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold" fill="#0D47A1">Control Unit</text>
+    <text x="470" y="220" font-family="Arial" font-size="8" fill="#1565C0">Uncondbranch</text>
+    <text x="470" y="232" font-family="Arial" font-size="8" fill="#1565C0">Branch</text>
+    <text x="470" y="244" font-family="Arial" font-size="8" fill="#1565C0">MemRead</text>
+    <text x="470" y="256" font-family="Arial" font-size="8" fill="#1565C0">MemtoReg</text>
+    <text x="470" y="268" font-family="Arial" font-size="8" fill="#1565C0">Reg2Loc</text>
+    <text x="570" y="220" font-family="Arial" font-size="8" fill="#1565C0">ALUOp</text>
+    <text x="570" y="232" font-family="Arial" font-size="8" fill="#1565C0">MemWrite</text>
+    <text x="570" y="244" font-family="Arial" font-size="8" fill="#1565C0">ALUSrc</text>
+    <text x="570" y="256" font-family="Arial" font-size="8" fill="#1565C0">RegWrite</text>
+  </g>
+  
+  <!-- Register File -->
+  <g id="register-file">
+    <rect x="580" y="415" width="120" height="190" fill="url(#registerGradient)" stroke="#1976D2" stroke-width="3" rx="5"/>
+    <text x="600" y="435" font-family="Arial" font-size="9" fill="#0D47A1">Read reg 1</text>
+    <text x="600" y="470" font-family="Arial" font-size="9" fill="#0D47A1">Read reg 2</text>
+    <text x="600" y="505" font-family="Arial" font-size="9" fill="#0D47A1">Write reg</text>
+    <text x="600" y="540" font-family="Arial" font-size="9" fill="#0D47A1">Write data</text>
+    <text x="640" y="595" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#1565C0">Registers</text>
+    <text x="675" y="435" font-family="Arial" font-size="9" fill="#0D47A1">Read data 1</text>
+    <text x="675" y="470" font-family="Arial" font-size="9" fill="#0D47A1">Read data 2</text>
+  </g>
+
+  <!-- Mux (Write Register Destination) - Reg2Loc -->
+  <g id="register-mux">
+    <rect x="530" y="480" width="40" height="35" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="550" y="500" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <text x="575" y="490" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="575" y="510" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
+  </g>
+
+  <!-- Sign Extend -->
+  <g id="sign-extend">
+    <rect x="450" y="660" width="120" height="60" fill="url(#signExtendGradient)" stroke="#388E3C" stroke-width="2" rx="10"/>
+    <text x="510" y="685" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#2E7D32">Sign-</text>
+    <text x="510" y="700" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#2E7D32">extend</text>
+    <text x="470" y="675" font-family="Arial" font-size="8" fill="#388E3C">32</text>
+    <text x="550" y="675" font-family="Arial" font-size="8" fill="#388E3C">64</text>
+  </g>
+
+  <!-- Mux (ALU Second Operand - ALUSrcMux) -->
+  <g id="alu-src-mux">
+    <rect x="730" y="480" width="40" height="45" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="750" y="505" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <text x="775" y="495" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="775" y="515" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
+  </g>
+
+  <!-- ALU -->
+  <g id="alu">
+    <rect x="780" y="435" width="120" height="100" fill="url(#aluGradient)" stroke="#FF9800" stroke-width="2" rx="5"/>
+    <text x="840" y="465" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#E65100">ALU</text>
+    <text x="820" y="425" font-family="Arial" font-size="9" fill="#1976D2">Zero</text>
+    <text x="910" y="480" font-family="Arial" font-size="9" fill="#E65100">ALU</text>
+    <text x="910" y="493" font-family="Arial" font-size="9" fill="#E65100">result</text>
+  </g>
+  
+  <!-- ALU Control -->
+  <g id="alu-control">
+    <rect x="795" y="590" width="90" height="50" fill="url(#controlGradient)" stroke="#1976D2" stroke-width="2" rx="10"/>
+    <text x="840" y="610" text-anchor="middle" font-family="Arial" font-size="9" font-weight="bold" fill="#0D47A1">ALU</text>
+    <text x="840" y="623" text-anchor="middle" font-family="Arial" font-size="9" font-weight="bold" fill="#0D47A1">control</text>
+  </g>
+
+  <!-- Data Memory -->
+  <g id="data-memory">
+    <rect x="1000" y="425" width="120" height="160" fill="url(#memoryGradient)" stroke="#6C757D" stroke-width="2"/>
+    <text x="1025" y="445" font-family="Arial" font-size="9" fill="#495057">Address</text>
+    <text x="1025" y="515" font-family="Arial" font-size="9" fill="#495057">Write data</text>
+    <text x="1080" y="445" font-family="Arial" font-size="9" fill="#495057">Read data</text>
+    <text x="1060" y="570" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#495057">Data</text>
+    <text x="1060" y="583" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#495057">memory</text>
+  </g>
+
+  <!-- Mux (Write Data to Register - MemToRegMux) -->
+  <g id="mem-to-reg-mux">
+    <rect x="980" y="600" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="1000" y="622" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <text x="1025" y="603" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="1025" y="627" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
+  </g>
+
+  <!-- Shift Left 2 -->
+  <g id="shift-left">
+    <rect x="575" y="325" width="50" height="40" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
+    <text x="600" y="340" text-anchor="middle" font-family="Arial" font-size="9" font-weight="bold" fill="#33691E">Shift</text>
+    <text x="600" y="353" text-anchor="middle" font-family="Arial" font-size="9" font-weight="bold" fill="#33691E">left 2</text>
+  </g>
+
+  <!-- Branch Adder -->
+  <g id="branch-adder">
+    <rect x="750" y="135" width="50" height="35" fill="url(#adderGradient)" stroke="#2196F3" stroke-width="2" rx="5"/>
+    <text x="775" y="157" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#0D47A1">Add</text>
+  </g>
+
+  <!-- AND Gate (for Branch condition) -->
+  <g id="and-gate">
+    <rect x="830" y="140" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
+    <text x="850" y="158" text-anchor="middle" font-family="Arial" font-size="10" fill="#33691E">&amp;</text>
+  </g>
+
+  <!-- OR Gate (for PC Mux select) -->
+  <g id="or-gate">
+    <rect x="900" y="140" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
+    <text x="920" y="158" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#33691E">≥1</text>
+  </g>
+  
+  <!-- PC Source Mux -->
+  <g id="pc-source-mux">
+    <rect x="980" y="140" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="1000" y="158" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <text x="1025" y="148" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="1025" y="165" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
+  </g>
+
+  <!-- Labels for Instruction Fields -->
+  <g id="instruction-field-labels" font-family="Arial" font-size="9" fill="#795548">
+    <text x="420" y="200">Instruction [31-21]</text> <!-- To Control -->
+    <text x="440" y="420">Instruction [9-5]</text> <!-- To Read Reg 1 -->
+    <text x="445" y="475">Instruction [20-16]</text> <!-- To Reg2Loc Mux -->
+    <text x="445" y="495">Instruction [4-0]</text> <!-- To Write Reg -->
+    <text x="565" y="473">to Read reg 2</text> <!-- Mux output -->
+    <text x="375" y="648">Instruction [31-0]</text> <!-- To Sign Extend -->
+    <text x="445" y="593">Instruction [31-21]</text> <!-- To ALU Control -->
+  </g>
+  
+  <!-- Data Paths -->
+  <g id="data-paths" stroke-width="2" fill="none">
+    <!-- PC Connections -->
+    <path stroke="#333" d="M230 500 L280 500" marker-end="url(#arrowhead)"/>
+    <path stroke="#333" d="M190 475 L190 175 L240 175" marker-end="url(#arrowhead)"/>
+    <path stroke="#333" d="M220 155 L240 155" marker-end="url(#arrowhead)"/>
+    <path stroke="#333" d="M310 155 L370 155 L370 130 L980 130 L980 150" marker-end="url(#arrowhead)"/>
+    <path stroke="#333" d="M1020 150 L1050 150 L1050 115 L190 115 L190 475" marker-end="url(#arrowhead)"/>
+
+    <!-- Instruction Memory Outputs (from common junction point) -->
+    <path stroke="#333" d="M400 500 L430 500" marker-end="url(#arrowhead)"/>
+    <!-- To Control Unit [31-21] -->
+    <path stroke="#333" d="M430 500 L430 210 L460 210" marker-end="url(#arrowhead)"/>
+    <!-- To Register File Read reg 1 [9-5] -->
+    <path stroke="#333" d="M430 500 L430 430 L580 430" marker-end="url(#arrowhead)"/>
+    <!-- To Reg2Loc Mux input 0 [20-16] -->
+    <path stroke="#333" d="M430 500 L430 485 L530 485" marker-end="url(#arrowhead)"/>
+    <!-- To Write Register (direct from [4-0]) -->
+    <path stroke="#333" d="M430 500 L430 505 L580 505" marker-end="url(#arrowhead)"/>
+    <!-- To Sign Extend [31-0] -->
+    <path stroke="#333" d="M430 500 L430 690 L450 690" marker-end="url(#arrowhead)"/>
+    <!-- To ALU Control [31-21] for function field -->
+    <path stroke="#333" d="M430 500 L430 605 L795 605" marker-end="url(#arrowhead)"/>
+
+    <!-- Reg2Loc Mux output to Read reg 2 -->
+    <path stroke="#333" d="M570 497 L580 470" marker-end="url(#arrowhead)"/>
+
+    <!-- Register File Outputs -->
+    <path stroke="#333" d="M700 430 L780 430 L780 455" marker-end="url(#arrowhead)"/>
+    <path stroke="#333" d="M700 465 L730 495" marker-end="url(#arrowhead)"/>
+    <!-- Register read data 2 to Data Memory write data -->
+    <path stroke="#333" d="M700 465 L715 465 L715 390 L965 390 L965 515 L1000 515" marker-end="url(#arrowhead)"/>
+
+    <!-- Sign Extend to ALUSrc Mux -->
+    <path stroke="#333" d="M570 690 L715 690 L715 515 L730 515" marker-end="url(#arrowhead)"/>
+    <!-- ALUSrc Mux to ALU -->
+    <path stroke="#333" d="M770 502 L780 485" marker-end="url(#arrowhead)"/>
+    <!-- ALU Result to Data Memory Address -->
+    <path stroke="#333" d="M900 485 L940 485 L940 445 L1000 445" marker-end="url(#arrowhead)"/>
+    <!-- ALU Result to MemToReg Mux -->
+    <path stroke="#333" d="M900 485 L925 485 L925 650 L975 650 L975 615" marker-end="url(#arrowhead)"/>
+    <!-- ALU Zero flag to AND gate -->
+    <path stroke="#333" d="M820 435 L820 150 L830 150" marker-end="url(#arrowhead)"/>
+
+    <!-- Data Memory Read Data to MemToReg Mux -->
+    <path stroke="#333" d="M1120 475 L1150 475 L1150 630 L1020 630" marker-end="url(#arrowhead)"/>
+    <!-- MemToReg Mux to Register File Write Data -->
+    <path stroke="#333" d="M980 615 L955 615 L955 655 L555 655 L555 540 L580 540" marker-end="url(#arrowhead)"/>
+
+    <!-- Branch Logic -->
+    <!-- Sign Extend to Shift Left 2 -->
+    <path stroke="#333" d="M510 660 L510 345 L575 345" marker-end="url(#arrowhead)"/>
+    <!-- Shift Left 2 to Branch Adder -->
+    <path stroke="#333" d="M625 345 L690 345 L690 162 L750 162" marker-end="url(#arrowhead)"/>
+    <!-- PC+4 to Branch Adder -->
+    <path stroke="#333" d="M300 155 L710 155 L710 148 L750 148" marker-end="url(#arrowhead)"/>
+    <!-- Branch Adder to OR Gate -->
+    <path stroke="#333" d="M800 155 L855 155 L855 154 L900 154" marker-end="url(#arrowhead)"/>
+  </g>
+
+  <!-- Control Lines (Fixed and cleaned up) -->
+  <g id="control-lines" stroke="#1976D2" stroke-width="2" fill="none">
+    <!-- Control Unit to OR gate (Uncondbranch) - Direct path -->
+    <path d="M460 220 L440 220 L440 75 L920 75 L920 140" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to AND gate (Branch) - Direct path -->
+    <path d="M460 232 L420 232 L420 80 L850 80 L850 140" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to Data Memory (MemRead) - Route straight right then down -->
+    <path d="M640 244 L1030 244 L1030 425" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to MemToReg Mux (MemtoReg) - Route down to MUX -->
+    <path d="M460 256 L410 256 L410 730 L1000 730 L1000 630" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to Reg2Loc Mux (Reg2Loc) - Direct path -->
+    <path d="M460 268 L475 268 L475 498" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to ALU Control (ALUOp) - Direct path -->
+    <path d="M640 220 L840 220 L840 590" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to Data Memory (MemWrite) - Direct path -->
+    <path d="M640 232 L1040 232 L1040 525" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to ALUSrc Mux (ALUSrc) - Direct path -->
+    <path d="M640 244 L750 244 L750 485" marker-end="url(#arrowheadBlue)"/>
+    
+    <!-- Control Unit to Register File (RegWrite) - Direct path -->
+    <path d="M640 256 L650 256 L650 555 L580 555" marker-end="url(#arrowheadBlue)"/>
+
+    <!-- Logic gate connections -->
+    <path d="M870 155 L885 155 L885 155 L900 155" marker-end="url(#arrowheadBlue)"/>
+    <path d="M940 155 L965 155 L965 155 L980 155" marker-end="url(#arrowheadBlue)"/>
+  </g>
+</svg>
