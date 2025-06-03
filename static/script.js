@@ -95,6 +95,89 @@
   }
 `;
   document.head.appendChild(emergencyStyles);
+
+  // Add CSS for better path highlighting
+  const highlightStyles = document.createElement("style");
+  highlightStyles.textContent = `
+    /* Path highlighting styles */
+    .path-highlight {
+      z-index: 1000 !important;
+      position: relative !important;
+      stroke-dasharray: none !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    
+    .block-highlight {
+      z-index: 500 !important;
+      position: relative !important;
+      opacity: 0.9 !important;
+    }
+    
+    /* Ensure highlighted elements are above normal elements */
+    svg path.path-highlight,
+    svg line.path-highlight {
+      z-index: 1000 !important;
+      position: relative !important;
+    }
+    
+    svg rect.block-highlight,
+    svg g.block-highlight {
+      z-index: 500 !important;
+      position: relative !important;
+    }
+    
+    /* Text animation styles */
+    .signal-text {
+      z-index: 1500 !important;
+      position: relative !important;
+      pointer-events: none !important;
+      user-select: none !important;
+      font-family: 'Arial', sans-serif !important;
+      font-weight: 900 !important; /* Extra bold for better visibility */
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.8) !important;
+      filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.6)) !important;
+    }
+    
+    /* Different colors for different data types with enhanced contrast */
+    .signal-text[data-path-id*="pc"] {
+      fill: #1976D2 !important;
+      stroke: #FFFFFF !important;
+      stroke-width: 2px !important;
+    }
+    
+    .signal-text[data-path-id*="instr"] {
+      fill: #FF9800 !important;
+      stroke: #000000 !important;
+      stroke-width: 2px !important;
+    }
+    
+    .signal-text[data-path-id*="reg"] {
+      fill: #4CAF50 !important;
+      stroke: #FFFFFF !important;
+      stroke-width: 2px !important;
+    }
+    
+    .signal-text[data-path-id*="alu"] {
+      fill: #E91E63 !important;
+      stroke: #FFFFFF !important;
+      stroke-width: 2px !important;
+    }
+    
+    .signal-text[data-path-id*="mem"] {
+      fill: #9C27B0 !important;
+      stroke: #FFFFFF !important;
+      stroke-width: 2px !important;
+    }
+    
+    .signal-text[data-path-id*="mux"] {
+      fill: #FF5722 !important;
+      stroke: #FFFFFF !important;
+      stroke-width: 2px !important;
+    }
+  `;
+  document.head.appendChild(highlightStyles);
+
   // --- Constants (Unchanged) ---
   const BITS_64 = 64n;
   const SIGN_BIT_64_MASK = 1n << (BITS_64 - 1n);
@@ -591,7 +674,7 @@
   }
 
   function resetAllSvgStyles() {
-    /* Unchanged */
+    /* Reset highlights but keep persistent text animations */
     if (!svgDoc) {
       console.warn("resetAllSvgStyles: No SVG document available");
       return;
@@ -601,7 +684,14 @@
       highlightedElements.clear();
       const dots = svgDoc.querySelectorAll(".signal-dot");
       dots.forEach((dot) => dot.remove());
-      const elements = svgDoc.querySelectorAll("path[id], line[id], rect[id], g[id]");
+
+      // DON'T remove persistent text elements here - only remove on full reset
+      // const persistentTexts = svgDoc.querySelectorAll(".signal-text");
+      // persistentTexts.forEach((text) => text.remove());
+
+      const elements = svgDoc.querySelectorAll(
+        "path[id], line[id], rect[id], g[id]"
+      );
 
       if (elements.length === 0) {
         console.warn("No SVG elements found with IDs - verify SVG structure");
@@ -611,11 +701,13 @@
       elements.forEach((el) => {
         // Remove highlight classes
         el.classList.remove("path-highlight", "block-highlight");
-        
+
         // Handle group elements
-        if (el.tagName.toLowerCase() === 'g') {
-          const children = el.querySelectorAll('rect, path, circle, ellipse, line');
-          children.forEach(child => {
+        if (el.tagName.toLowerCase() === "g") {
+          const children = el.querySelectorAll(
+            "rect, path, circle, ellipse, line"
+          );
+          children.forEach((child) => {
             child.classList.remove("path-highlight", "block-highlight");
             // Reset to original styles by removing inline styles
             child.style.stroke = "";
@@ -635,9 +727,11 @@
       // Re-enable transitions after reset
       setTimeout(() => {
         elements.forEach((el) => {
-          if (el.tagName.toLowerCase() === 'g') {
-            const children = el.querySelectorAll('rect, path, circle, ellipse, line');
-            children.forEach(child => {
+          if (el.tagName.toLowerCase() === "g") {
+            const children = el.querySelectorAll(
+              "rect, path, circle, ellipse, line"
+            );
+            children.forEach((child) => {
               child.style.transition =
                 "stroke 0.15s linear, stroke-width 0.15s linear, fill 0.15s linear";
             });
@@ -721,115 +815,36 @@
   }
 
   function mapSvgId(id) {
-    // Enhanced LEGv8-specific mapping between backend IDs and actual SVG element IDs
-    const legv8IdMappings = {
-      // === CORE COMPONENTS ===
-      "block-pc": "pc-register",
-      "block-imem": "instruction-memory", 
-      "block-control": "control-unit",
-      "block-registers": "register-file",
-      "block-alu": "alu",
-      "block-dmem": "data-memory",
-      "block-signext": "sign-extend",
-      "block-alucontrol": "alu-control",
-      
-      // === PC AND ADDERS ===
-      "block-pcadder": "pc-adder",
-      "block-adder1": "pc-adder",
-      "block-branchadder": "branch-adder",
-      "block-shiftleft": "shift-left",
-      
-      // === LOGIC GATES ===
-      "block-andgate": "and-gate",
-      "block-orgate": "or-gate",
-      
-      // === MULTIPLEXERS ===
-      "block-reg2locmux": "register-mux",      // Select read register 2
-      "block-alusrcmux": "alu-src-mux",        // Select ALU input B  
-      "block-memtoregmux": "mem-to-reg-mux",   // Select write data source
-      "block-pcsrcmux": "pc-source-mux",       // Select next PC
-
-      // === INSTRUCTION FETCH PATHS ===
-      "path-pc-imem": "data-paths",
-      "path-pc-pcadder": "data-paths",
-      "path-pcadder-pcmux": "data-paths",
-      "path-pc-adder1": "data-paths",
-      "path-adder1-mux4-in0": "data-paths",
-      
-      // === INSTRUCTION DECODE PATHS ===
-      "path-instr-control": "data-paths",      // [31:21] to Control Unit
-      "path-instr-reg1": "data-paths",         // [9:5] to Read Reg 1
-      "path-instr-reg2mux": "data-paths",      // [20:16]/[4:0] to Reg2Loc MUX
-      "path-instr-writereg": "data-paths",     // [4:0] to Write Register
-      "path-instr-signext": "data-paths",      // [31:0] to Sign Extend
-      "path-instr-alucontrol": "data-paths",   // [31:21] to ALU Control
-      "path-instr-regwriteaddr": "data-paths",
-      
-      // === EXECUTE PATHS ===
-      "path-reg1-alu": "data-paths",           // Read Data 1 to ALU
-      "path-reg2-alumux": "data-paths",        // Read Data 2 to ALU Src MUX
-      "path-signext-alumux": "data-paths",     // Sign Extend to ALU Src MUX
-      "path-alumux-alu": "data-paths",         // MUX output to ALU
-      "path-registers-alu": "data-paths",
-      "path-signext-alu": "data-paths",
-      "path-signext-shiftleft": "data-paths",  // For branch target
-      "path-shiftleft-branchadder": "data-paths",
-      
-      // === MEMORY PATHS ===
-      "path-alu-dmem-addr": "data-paths",      // ALU result to Data Memory address
-      "path-reg2-dmem-data": "data-paths",     // Read Data 2 to Data Memory write data
-      "path-dmem-memtoregmux": "data-paths",   // Data Memory to MEM-to-REG MUX
-      "path-alu-dmem": "data-paths",
-      "path-dmem-wb": "data-paths",
-      
-      // === WRITE BACK PATHS ===
-      "path-alu-memtoregmux": "data-paths",    // ALU result to MEM-to-REG MUX
-      "path-memtoregmux-writereg": "data-paths", // MUX output to Write Register
-      "path-mux3-wb": "data-paths",
-      "path-wb-regwrite": "data-paths",
-      "path-alu-mux3-in0": "data-paths",
-      "path-mux4-pc": "data-paths",
-      
-      // === CONTROL SIGNALS ===
-      "control-regwrite": "control-lines",      // Enable register write
-      "control-regwrite-enable": "control-lines",
-      "control-alusrc": "control-lines",        // Select ALU source B
-      "control-memread": "control-lines",       // Enable memory read
-      "control-memwrite": "control-lines",      // Enable memory write  
-      "control-memtoreg": "control-lines",      // Select write data source
-      "control-branch": "control-lines",        // Enable conditional branch
-      "control-uncondbranch": "control-lines",  // Enable unconditional branch
-      "control-aluop": "control-lines",         // ALU operation control
-      "control-reg2loc": "control-lines",       // Select second read register
-    };
-
-    return legv8IdMappings[id] || id; // Return mapped ID or original
+    // NO MAPPING NEEDED - Backend IDs already match SVG IDs exactly
+    // Just return the original ID since they're designed to match
+    return id;
   }
 
   // LEGv8-specific highlighting patterns based on instruction type and pipeline stage
   function detectInstructionType(instrStr) {
     if (!instrStr) return "UNKNOWN";
-    
+
     const instr = instrStr.toUpperCase().trim();
-    
+
     // R-Type instructions (register-register operations)
     if (/^(ADD|SUB|AND|ORR|EOR|LSL|LSR|ASR)\s+X/.test(instr)) return "R-TYPE";
-    
+
     // I-Type instructions (immediate operations)
     if (/^(ADDI|SUBI|ANDI|ORRI|EORI)\s+X/.test(instr)) return "I-TYPE";
-    
+
     // Load instructions
     if (/^LDUR\s+X/.test(instr)) return "LOAD";
-    
+
     // Store instructions
     if (/^STUR\s+X/.test(instr)) return "STORE";
-    
+
     // Branch instructions
-    if (/^(CBZ|CBNZ|B\.EQ|B\.NE|B\.LT|B\.LE|B\.GT|B\.GE|B)\s/.test(instr)) return "BRANCH";
-    
+    if (/^(CBZ|CBNZ|B\.EQ|B\.NE|B\.LT|B\.LE|B\.GT|B\.GE|B)\s/.test(instr))
+      return "BRANCH";
+
     // Move instructions
     if (/^(MOVZ|MOVK)\s+X/.test(instr)) return "MOVE";
-    
+
     return "UNKNOWN";
   }
 
@@ -837,84 +852,108 @@
     const patterns = {
       // === R-TYPE INSTRUCTIONS (ADD, SUB, AND, OR) ===
       "R-TYPE": {
-        "fetch": {
+        fetch: {
           active_blocks: ["block-pc", "block-imem", "block-pcadder"],
           active_paths: ["path-pc-imem", "path-pc-pcadder"],
-          description: "Fetch instruction from memory"
+          description: "Fetch instruction from memory",
         },
-        "decode": {
-          active_blocks: ["block-control", "block-registers", "block-reg2locmux"],
-          active_paths: ["path-instr-control", "path-instr-reg1", "path-instr-reg2mux"],
+        decode: {
+          active_blocks: [
+            "block-control",
+            "block-registers",
+            "block-reg2locmux",
+          ],
+          active_paths: [
+            "path-instr-control",
+            "path-instr-reg1",
+            "path-instr-reg2mux",
+          ],
           control_signals: ["RegWrite", "ALUSrc", "ALUOp"],
-          description: "Decode instruction and read registers"
+          description: "Decode instruction and read registers",
         },
-        "execute": {
+        execute: {
           active_blocks: ["block-alu", "block-alucontrol", "block-alusrcmux"],
-          active_paths: ["path-reg1-alu", "path-reg2-alumux", "path-alumux-alu"],
-          description: "Perform ALU operation"
+          active_paths: [
+            "path-reg1-alu",
+            "path-reg2-alumux",
+            "path-alumux-alu",
+          ],
+          description: "Perform ALU operation",
         },
-        "memory": {
+        memory: {
           // R-type doesn't use memory
           active_blocks: [],
           active_paths: [],
-          description: "Memory stage (not used for R-type)"
+          description: "Memory stage (not used for R-type)",
         },
-        "writeback": {
+        writeback: {
           active_blocks: ["block-registers", "block-memtoregmux"],
           active_paths: ["path-alu-memtoregmux", "path-memtoregmux-writereg"],
-          description: "Write result back to register"
-        }
+          description: "Write result back to register",
+        },
       },
-      
+
       // === LOAD INSTRUCTIONS (LDUR) ===
-      "LOAD": {
-        "memory": {
+      LOAD: {
+        memory: {
           active_blocks: ["block-dmem"],
           active_paths: ["path-alu-dmem-addr", "path-dmem-memtoregmux"],
-          control_signals: ["MemRead"]
-        }
+          control_signals: ["MemRead"],
+        },
       },
-      
+
       // === STORE INSTRUCTIONS (STUR) ===
-      "STORE": {
-        "memory": {
+      STORE: {
+        memory: {
           active_blocks: ["block-dmem"],
           active_paths: ["path-alu-dmem-addr", "path-reg2-dmem-data"],
-          control_signals: ["MemWrite"]
+          control_signals: ["MemWrite"],
         },
-        "writeback": {
+        writeback: {
           // Store doesn't write back to register
           active_blocks: [],
-          active_paths: []
-        }
+          active_paths: [],
+        },
       },
-      
+
       // === BRANCH INSTRUCTIONS (CBZ, B) ===
-      "BRANCH": {
-        "execute": {
-          active_blocks: ["block-alu", "block-shiftleft", "block-branchadder", "block-andgate"],
-          active_paths: ["path-signext-shiftleft", "path-shiftleft-branchadder"],
-          control_signals: ["Branch"]
-        }
+      BRANCH: {
+        execute: {
+          active_blocks: [
+            "block-alu",
+            "block-shiftleft",
+            "block-branchadder",
+            "block-andgate",
+          ],
+          active_paths: [
+            "path-signext-shiftleft",
+            "path-shiftleft-branchadder",
+          ],
+          control_signals: ["Branch"],
+        },
+      },
+    };
+
+    return (
+      patterns[instructionType]?.[stage] || {
+        active_blocks: [],
+        active_paths: [],
+        control_signals: [],
+        description: `${instructionType} ${stage} (pattern not defined)`,
       }
-    };
-    
-    return patterns[instructionType]?.[stage] || { 
-      active_blocks: [], 
-      active_paths: [], 
-      control_signals: [],
-      description: `${instructionType} ${stage} (pattern not defined)`
-    };
+    );
   }
 
   // Animation error tracking
   let animationErrorCount = 0;
-  const MAX_ANIMATION_ERRORS = 3;
-  
+  const MAX_ANIMATION_ERRORS = 10000;
+
   function handleAnimationError(errorMessage) {
     animationErrorCount++;
-    console.warn(`Animation error ${animationErrorCount}/${MAX_ANIMATION_ERRORS}: ${errorMessage}`);
-    
+    console.warn(
+      `Animation error ${animationErrorCount}/${MAX_ANIMATION_ERRORS}: ${errorMessage}`
+    );
+
     if (animationErrorCount >= MAX_ANIMATION_ERRORS) {
       console.warn("Too many animation errors, disabling animations");
       showAnimationsToggle.checked = false;
@@ -923,33 +962,87 @@
     }
   }
 
-  function createSignalBit(svgDoc, value) {
-    /* Unchanged */
-    if (!svgDoc) return null;
-    const bit = svgDoc.createElementNS("http://www.w3.org/2000/svg", "circle");
-    bit.setAttribute("r", "4");
-    bit.classList.add("signal-dot");
-    bit.classList.add(value === 1 ? "signal-bit-1" : "signal-bit-0");
-    bit.setAttribute("fill", value === 1 ? "#4CAF50" : "#f44336");
-    return bit;
+  function calculateTextOffset(pathElement) {
+    // Calculate offset to position text above the path to avoid overlap
+    try {
+      const pathLength = pathElement.getTotalLength();
+      const midPoint = pathElement.getPointAtLength(pathLength / 2);
+      const startPoint = pathElement.getPointAtLength(0);
+      const endPoint = pathElement.getPointAtLength(pathLength);
+
+      // Calculate path direction and perpendicular offset
+      const deltaX = endPoint.x - startPoint.x;
+      const deltaY = endPoint.y - startPoint.y;
+      const pathAngle = Math.atan2(deltaY, deltaX);
+
+      // Offset perpendicular to path direction (above the path)
+      const offsetDistance = 15; // Distance above path
+      const offsetX = -Math.sin(pathAngle) * offsetDistance;
+      const offsetY = Math.cos(pathAngle) * offsetDistance;
+
+      return { x: offsetX, y: offsetY };
+    } catch (e) {
+      return { x: 0, y: -15 }; // Default offset above
+    }
   }
 
-  function animateSignalBits(pathElement, signal, svgDoc) {
-    /* Fixed animation function with error handling */
+  function createSignalText(svgDoc, text, pathId) {
+    if (!svgDoc) return null;
+
+    // Create text element with enhanced styling
+    const textElement = svgDoc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+    textElement.classList.add("signal-text");
+    textElement.setAttribute("font-family", "Arial, sans-serif");
+    textElement.setAttribute("font-size", "12");
+    textElement.setAttribute("font-weight", "bold");
+    textElement.setAttribute("fill", "#FF5722");
+    textElement.setAttribute("stroke", "#FFFFFF");
+    textElement.setAttribute("stroke-width", "1.5");
+    textElement.setAttribute("text-anchor", "middle");
+    textElement.setAttribute("dominant-baseline", "middle");
+    textElement.setAttribute("paint-order", "stroke fill"); // Stroke được vẽ trước
+    textElement.textContent = text || "DATA";
+
+    // Add path reference for debugging and styling
+    textElement.setAttribute("data-path-id", pathId);
+
+    return textElement;
+  }
+
+  function animateSignalText(pathElement, signal, svgDoc) {
     if (!svgDoc || !pathElement || !signal) {
       console.warn("Missing parameters for signal animation");
       return;
     }
 
+    // Reset animation error counter on successful starts
+    if (animationErrorCount > 0) {
+      animationErrorCount = Math.max(0, animationErrorCount - 1);
+    }
+
     // Validate path element
     if (!pathElement.getTotalLength) {
-      console.warn("Path element does not support getTotalLength - skipping animation");
+      console.warn(
+        "Path element does not support getTotalLength - skipping animation"
+      );
       handleAnimationError("Path element doesn't support getTotalLength");
       return;
     }
 
+    // Remove existing text animations on the same path
+    const currentPathId = signal.path_id;
+    const existingTexts = svgDoc.querySelectorAll(
+      `.signal-text[data-path-id="${currentPathId}"]`
+    );
+    existingTexts.forEach((existingText) => {
+      console.log(`🗑️ Removing existing text on path: ${currentPathId}`);
+      existingText.remove();
+    });
+
     try {
-      // Test if path is valid by checking its length
       const pathLength = pathElement.getTotalLength();
       if (pathLength <= 0) {
         console.warn("Path has zero length - skipping animation");
@@ -962,66 +1055,120 @@
       return;
     }
 
-    const bitValues = signal.bits || [1];
-    const duration = signal.duration || animationSpeed;
-    const startDelay = signal.start_delay || 0;
-    const spacingFactor = 0.1;
+    // Determine text content based on path ID
+    const pathId = signal.path_id;
+    let animationText = "DATA";
 
-    bitValues.forEach((bitValue, index) => {
-      const bit = createSignalBit(svgDoc, bitValue);
-      if (!bit) return;
-      
-      try {
-        svgDoc.documentElement.appendChild(bit);
-        
-        gsap
-          .timeline({
-            onComplete: () => {
-              if (bit && bit.parentNode) {
-                bit.remove();
-              }
-            },
-            onError: (error) => {
-              console.warn("GSAP animation error:", error);
-              handleAnimationError(`GSAP error: ${error.message || error}`);
-              if (bit && bit.parentNode) {
-                bit.remove();
-              }
+    // Map path IDs to appropriate text labels
+    const textMap = {
+      "path-pc-imem": "PC",
+      "path-pc-adder1": "PC",
+      "path-imem-out": "INSTR",
+      "path-instr-control": "OPCODE",
+      "path-instr-regs": "REG_ADDR",
+      "path-regs-rdata1": "REG1_DATA",
+      "path-regs-rdata2": "REG2_DATA",
+      "path-instr-signext": "IMM",
+      "path-signext-out-mux2": "SIGN_EXT",
+      "path-mux2-alu": "ALU_IN2",
+      "path-rdata1-alu": "ALU_IN1",
+      "path-alu-result": "ALU_OUT",
+      "path-alu-zero": "ZERO",
+      "path-mem-readdata": "MEM_DATA",
+      "path-mux3-wb": "WB_DATA",
+      "path-adder1-mux4-in0": "PC+4",
+      "path-mux4-pc": "NEXT_PC",
+      "path-rdata2-memwrite": "STORE_DATA",
+      "path-signext-br-shift": "BR_OFFSET",
+      "path-pc-adder2": "PC",
+      "path-adder2-mux4-in1": "BR_TARGET",
+    };
+
+    animationText = textMap[pathId] || "DATA";
+
+    // Slower, more cinematic animation speed
+    const duration = 5 || 2.0; // Increased duration for slower movement
+    const startDelay = signal.start_delay || 0;
+
+    // Create text element
+    const textElement = createSignalText(svgDoc, animationText, pathId);
+    if (!textElement) return;
+
+    try {
+      svgDoc.documentElement.appendChild(textElement);
+      console.log(`Created signal text "${animationText}" for path: ${pathId}`);
+
+      // Get path start position with offset to avoid overlap
+      const startPoint = pathElement.getPointAtLength(0);
+      const offset = calculateTextOffset(pathElement);
+
+      gsap
+        .timeline({
+          onComplete: () => {
+            // Don't remove text element - keep it persistent
+            console.log(
+              `Text "${animationText}" animation completed, keeping persistent`
+            );
+          },
+          onError: (error) => {
+            console.warn("GSAP text animation error:", error);
+            handleAnimationError(`GSAP error: ${error.message || error}`);
+            if (textElement && textElement.parentNode) {
+              textElement.remove();
             }
-          })
-          .set(bit, {
-            x: 0,
-            y: 0,
-            opacity: 0,
-            immediateRender: true,
-          })
-          .to(bit, {
-            delay: startDelay + index * spacingFactor * duration,
-            opacity: 1,
+          },
+        })
+        .set(textElement, {
+          x: startPoint.x + offset.x,
+          y: startPoint.y + offset.y,
+          opacity: 0,
+          scale: 0.8,
+          immediateRender: true,
+        })
+        .to(textElement, {
+          delay: startDelay,
+          opacity: 1,
+          scale: 1,
+          duration: 0.4,
+          ease: "back.out(1.7)",
+        })
+        .to(
+          textElement,
+          {
             duration: duration,
             motionPath: {
               path: pathElement,
-              align: pathElement,
-              alignOrigin: [0.5, 0.5],
-              start: 0,
-              end: 1,
               autoRotate: false,
+              alignOrigin: [0.5, 0.5],
             },
-            ease: "none",
+            ease: "power1.inOut", // Smoother, more linear easing
             onError: (error) => {
-              console.warn("Motion path animation error:", error);
-              handleAnimationError(`Motion path error: ${error.message || error}`);
-            }
-          })
-          .to(bit, { opacity: 0, duration: 0.05 }, ">-0.05");
-      } catch (e) {
-        console.warn("Error creating GSAP animation:", e.message);
-        handleAnimationError(`GSAP creation error: ${e.message}`);
-        if (bit && bit.parentNode) {
-          bit.remove();
-        }
+              console.warn("Motion path text animation error:", error);
+              handleAnimationError(
+                `Motion path error: ${error.message || error}`
+              );
+            },
+          },
+          "-=0.2"
+        )
+        .to(
+          textElement,
+          {
+            // Keep text visible at the end position
+            opacity: 0.8, // Slightly transparent to indicate completion
+            scale: 0.9,
+            duration: 0.3,
+            ease: "power2.out",
+          },
+          ">-0.1"
+        );
+    } catch (e) {
+      console.warn("Error creating GSAP text animation:", e.message);
+      handleAnimationError(`GSAP creation error: ${e.message}`);
+      if (textElement && textElement.parentNode) {
+        textElement.remove();
       }
-    });
+    }
   }
 
   function applyHighlightsAndAnimations(stepData) {
@@ -1040,10 +1187,12 @@
 
     // *** LEGv8-SPECIFIC ENHANCEMENT ***
     // Determine instruction type and get LEGv8-specific patterns
-    const instrType = detectInstructionType(stepData.current_instruction_string || currentInstructionStr);
+    const instrType = detectInstructionType(
+      stepData.current_instruction_string || currentInstructionStr
+    );
     const stage = stepData.stage?.toLowerCase() || "fetch";
     const legv8Pattern = getLegv8HighlightPattern(instrType, stage);
-    
+
     console.log(`LEGv8 Enhancement: ${instrType} - ${stage.toUpperCase()}`);
     console.log(`LEGv8 Pattern:`, legv8Pattern);
 
@@ -1054,29 +1203,34 @@
     // Merge backend data with LEGv8-specific patterns for more accurate highlighting
     const allActiveBlocks = [
       ...(stepData.active_blocks || []),
-      ...(legv8Pattern.active_blocks || [])
+      ...(legv8Pattern.active_blocks || []),
     ];
-    
+
     const allActivePaths = [
       ...(stepData.active_paths || []),
-      ...(legv8Pattern.active_paths || [])
+      ...(legv8Pattern.active_paths || []),
     ];
 
     // Remove duplicates
     const uniqueActiveBlocks = [...new Set(allActiveBlocks)];
     const uniqueActivePaths = [...new Set(allActivePaths)];
 
-    console.log(`Highlighting ${uniqueActiveBlocks.length} blocks and ${uniqueActivePaths.length} paths`);
+    console.log(
+      `Highlighting ${uniqueActiveBlocks.length} blocks and ${uniqueActivePaths.length} paths`
+    );
+
+    // Move highlighted paths to front (for better visibility)
+    bringPathsToFront(uniqueActivePaths);
 
     // Apply block highlights with mapping
     uniqueActiveBlocks.forEach((id) => {
       const mappedId = mapSvgId(id);
       let el = svgDoc.getElementById(mappedId);
-      
+      console.log(mappedId);
       // If not found directly, try to find within groups
       if (!el) {
         // Look for the element within groups
-        const groups = svgDoc.querySelectorAll('g');
+        const groups = svgDoc.querySelectorAll("g");
         for (let group of groups) {
           if (group.id === mappedId) {
             el = group;
@@ -1090,15 +1244,15 @@
           }
         }
       }
-      
+
       if (el) {
         foundElements++;
-        
+
         // Handle group elements differently
-        if (el.tagName.toLowerCase() === 'g') {
+        if (el.tagName.toLowerCase() === "g") {
           // Highlight all child elements in the group
-          const children = el.querySelectorAll('rect, path, circle, ellipse');
-          children.forEach(child => {
+          const children = el.querySelectorAll("rect, path, circle, ellipse");
+          children.forEach((child) => {
             child.classList.add("block-highlight");
             child.style.fill = "rgba(233, 30, 99, 0.15)";
             child.style.stroke = "#e91e63";
@@ -1111,7 +1265,7 @@
           el.style.stroke = "#e91e63";
           el.style.strokeWidth = "2";
         }
-        
+
         console.log(`Highlighting block: ${id} → ${mappedId}`);
       } else {
         missingElements++;
@@ -1119,14 +1273,14 @@
       }
     });
 
-    // Apply path highlights with mapping  
+    // Apply path highlights with mapping
     uniqueActivePaths.forEach((id) => {
-      const mappedId = mapSvgId(id);
+      const mappedId = mapSvgId(id); // Now actually uses mapping!
       let el = svgDoc.getElementById(mappedId);
-      
+
       // If not found directly, try to find within groups
       if (!el) {
-        const groups = svgDoc.querySelectorAll('g');
+        const groups = svgDoc.querySelectorAll("g");
         for (let group of groups) {
           if (group.id === mappedId) {
             el = group;
@@ -1139,19 +1293,21 @@
           }
         }
       }
-      
+
       if (el) {
         foundElements++;
-        
+
         // Handle group elements differently for paths
-        if (el.tagName.toLowerCase() === 'g') {
+        if (el.tagName.toLowerCase() === "g") {
           // Highlight all path elements in the group
-          const paths = el.querySelectorAll('path, line');
-          paths.forEach(path => {
+          const paths = el.querySelectorAll("path, line");
+          paths.forEach((path) => {
             if (path.tagName.toLowerCase() !== "rect") {
               path.classList.add("path-highlight");
               path.style.stroke = "#e91e63";
               path.style.strokeWidth = "3";
+              path.style.zIndex = "1000"; // Bring highlighted paths to front
+              path.style.position = "relative"; // Enable z-index
             }
           });
         } else if (el.tagName.toLowerCase() !== "rect") {
@@ -1159,8 +1315,10 @@
           el.classList.add("path-highlight");
           el.style.stroke = "#e91e63";
           el.style.strokeWidth = "3";
+          el.style.zIndex = "1000"; // Bring highlighted paths to front
+          el.style.position = "relative"; // Enable z-index
         }
-        
+
         console.log(`Highlighting path: ${id} → ${mappedId}`);
       } else {
         missingElements++;
@@ -1192,53 +1350,130 @@
       svgStatus.style.backgroundColor = "rgba(0,128,0,0.7)";
     }
 
-    // Handle animations with mapping - Safe animation handling
-    if (showAnimationsToggle.checked && stepData.animated_signals) {
-      stepData.animated_signals.forEach((signal) => {
-        const mappedId = mapSvgId(signal.path_id);
-        let pathElement = svgDoc.getElementById(mappedId);
-        
-        // If not found directly, try to find within groups
-        if (!pathElement) {
-          const groups = svgDoc.querySelectorAll('g');
-          for (let group of groups) {
-            if (group.id === mappedId) {
-              // Use first path in the group for animation
-              pathElement = group.querySelector('path, line');
-              break;
-            }
-            const childEl = group.querySelector(`#${mappedId}`);
-            if (childEl && (childEl.tagName.toLowerCase() === 'path' || childEl.tagName.toLowerCase() === 'line')) {
-              pathElement = childEl;
-              break;
+    // Handle animations with mapping - Text animation handling
+    if (showAnimationsToggle.checked) {
+      // Reset animation error counter when animations are enabled
+      animationErrorCount = 0;
+
+      // Create animations for backend signals if available
+      if (stepData.animated_signals && stepData.animated_signals.length > 0) {
+        stepData.animated_signals.forEach((signal) => {
+          const mappedId = mapSvgId(signal.path_id);
+          let pathElement = svgDoc.getElementById(mappedId);
+
+          // If not found directly, try to find within groups
+          if (!pathElement) {
+            const groups = svgDoc.querySelectorAll("g");
+            for (let group of groups) {
+              if (group.id === mappedId) {
+                // Use first path in the group for animation
+                pathElement = group.querySelector("path, line");
+                break;
+              }
+              const childEl = group.querySelector(`#${mappedId}`);
+              if (
+                childEl &&
+                (childEl.tagName.toLowerCase() === "path" ||
+                  childEl.tagName.toLowerCase() === "line")
+              ) {
+                pathElement = childEl;
+                break;
+              }
             }
           }
-        }
-        
-        if (pathElement) {
-          // Additional safety check for path validity
-          try {
-            if (pathElement.getTotalLength && pathElement.getTotalLength() > 0) {
-              animateSignalBits(pathElement, signal, svgDoc);
-              console.log(`Animating signal: ${signal.path_id} → ${mappedId}`);
-            } else {
-              console.warn(`Path element found but invalid for animation: ${mappedId}`);
+
+          if (pathElement) {
+            // Additional safety check for path validity
+            try {
+              if (
+                pathElement.getTotalLength &&
+                pathElement.getTotalLength() > 0
+              ) {
+                // Use new text animation instead of dots
+                animateSignalText(pathElement, signal, svgDoc);
+                console.log(
+                  `Animating signal text: ${signal.path_id} → ${mappedId}`
+                );
+              } else {
+                console.warn(
+                  `Path element found but invalid for animation: ${mappedId}`
+                );
+              }
+            } catch (pathError) {
+              console.warn(
+                `Path element error for ${mappedId}:`,
+                pathError.message
+              );
             }
-          } catch (pathError) {
-            console.warn(`Path element error for ${mappedId}:`, pathError.message);
+          } else {
+            console.warn(
+              `Animation path ID not found: ${signal.path_id} (mapped to ${mappedId})`
+            );
           }
-        } else {
-          console.warn(
-            `Animation path ID not found: ${signal.path_id} (mapped to ${mappedId})`
-          );
-        }
-      });
+        });
+      } else {
+        // No backend signals, create animations for highlighted paths
+        console.log(
+          "No backend animated_signals, creating animations for highlighted paths"
+        );
+
+        uniqueActivePaths.forEach((pathId) => {
+          const mappedId = mapSvgId(pathId);
+          let pathElement = svgDoc.getElementById(mappedId);
+
+          // If not found directly, try to find within groups
+          if (!pathElement) {
+            const groups = svgDoc.querySelectorAll("g");
+            for (let group of groups) {
+              if (group.id === mappedId) {
+                pathElement = group.querySelector("path, line");
+                break;
+              }
+              const childEl = group.querySelector(`#${mappedId}`);
+              if (
+                childEl &&
+                (childEl.tagName.toLowerCase() === "path" ||
+                  childEl.tagName.toLowerCase() === "line")
+              ) {
+                pathElement = childEl;
+                break;
+              }
+            }
+          }
+
+          if (pathElement) {
+            try {
+              if (
+                pathElement.getTotalLength &&
+                pathElement.getTotalLength() > 0
+              ) {
+                // Create synthetic signal for path animation
+                const syntheticSignal = {
+                  path_id: pathId,
+                  duration: 2.0,
+                  start_delay: Math.random() * 0.5, // Random delay for variety
+                };
+
+                animateSignalText(pathElement, syntheticSignal, svgDoc);
+                console.log(
+                  `Creating synthetic text animation for path: ${pathId}`
+                );
+              }
+            } catch (pathError) {
+              console.warn(
+                `Path error for synthetic animation ${mappedId}:`,
+                pathError.message
+              );
+            }
+          }
+        });
+      }
     }
 
     // Control signals update with LEGv8 enhancement
     const backendSignals = stepData.control_signals || {};
     const legv8Signals = legv8Pattern.control_signals || [];
-    
+
     knownControlSignals.forEach((signalName) => {
       const valueSpan = document.getElementById(
         `signal-value-${signalName.toLowerCase()}`
@@ -1246,17 +1481,17 @@
       if (valueSpan) {
         // Use backend data if available, otherwise check LEGv8 pattern
         let value = backendSignals[signalName];
-        
+
         // If not in backend data but in LEGv8 pattern, mark as active
         if (value === undefined && legv8Signals.includes(signalName)) {
           value = 1; // LEGv8 pattern indicates this signal should be active
         }
-        
+
         const displayValue =
           typeof value === "bigint" ? value.toString() : value;
         valueSpan.textContent = displayValue !== undefined ? displayValue : "-";
         valueSpan.classList.remove("active", "inactive", "other");
-        
+
         if (displayValue === 1 || displayValue === "1") {
           valueSpan.classList.add("active");
         } else if (displayValue === 0 || displayValue === "0") {
@@ -1475,7 +1710,7 @@
         ) {
           updateLog(data.message || "Instruction completed.");
           currentMicroStepIndex = -1;
-          
+
           const nextPC = parseAddress(data.cpu_state?.pc);
           if (!isNaN(nextPC)) {
             currentInstructionAddr = nextPC;
@@ -1498,7 +1733,7 @@
           stepStatus = "instruction_completed";
         } else if (data.status === "finished_program") {
           updateLog(data.message || "Program finished.");
-          
+
           setSimulationState(false, false, data.message || "End of program");
           highlightLine(-1);
           stepStatus = "finished_program";
@@ -1591,24 +1826,26 @@
     if (isRunning || !simulationLoaded) return;
     isRunning = true;
     setSimulationState(simulationLoaded, true);
-    
+
     // Slower intervals for better visualization
     const microStepInterval = showAnimationsToggle.checked ? 1200 : 400; // Slower for micro-steps
     const instructionInterval = showAnimationsToggle.checked ? 800 : 200; // Pause between instructions
-    
-    console.log(`Starting auto-run with micro-step interval: ${microStepInterval}ms`);
-    
+
+    console.log(
+      `Starting auto-run with micro-step interval: ${microStepInterval}ms`
+    );
+
     const runTick = async () => {
       if (!simulationLoaded || !isRunning) {
         console.log("Auto-run tick: Halting (state changed).");
         return;
       }
-      
+
       updateStatus("Running... Executing micro-step...");
-      
+
       try {
         const stepResult = await handleSingleMicroStep();
-        
+
         if (stepResult === "error") {
           console.log("Auto-run tick: Halting (error occurred).");
           stopAutoRun();
@@ -1618,9 +1855,11 @@
           stopAutoRun();
           return;
         } else if (stepResult === "instruction_completed") {
-          console.log("Auto-run tick: Instruction completed, brief pause before next...");
+          console.log(
+            "Auto-run tick: Instruction completed, brief pause before next..."
+          );
           updateStatus("Running... Instruction completed, continuing...");
-          
+
           // Brief pause between instructions
           if (isRunning && simulationLoaded) {
             runIntervalId = setTimeout(runTick, instructionInterval);
@@ -1630,7 +1869,7 @@
         } else if (stepResult === "micro_step_ok") {
           console.log("Auto-run tick: Micro-step completed, continuing...");
           updateStatus("Running... Continuing micro-steps...");
-          
+
           // Continue with next micro-step
           if (isRunning && simulationLoaded) {
             runIntervalId = setTimeout(runTick, microStepInterval);
@@ -1647,7 +1886,7 @@
         stopAutoRun();
       }
     };
-    
+
     updateStatus("Running... Starting micro-step execution");
     runTick();
   }
@@ -1702,8 +1941,10 @@
 
       // List all elements with IDs
       const elementsWithId = svgDoc.querySelectorAll("[id]");
-      console.log(`\n=== ALL SVG ELEMENTS WITH IDs (${elementsWithId.length}) ===`);
-      
+      console.log(
+        `\n=== ALL SVG ELEMENTS WITH IDs (${elementsWithId.length}) ===`
+      );
+
       const idList = [];
       elementsWithId.forEach((el) => {
         const info = `${el.id} (${el.tagName.toLowerCase()})`;
@@ -1712,14 +1953,25 @@
       });
 
       // Show in alert for easy copying
-      alert(`SVG Elements with IDs:\n\n${idList.join('\n')}\n\nCheck console for more details.`);
+      alert(
+        `SVG Elements with IDs:\n\n${idList.join(
+          "\n"
+        )}\n\nCheck console for more details.`
+      );
 
       // Test highlight functionality
       console.log("\n=== TESTING HIGHLIGHT ===");
-      
+
       // Try to highlight a few common elements
-      const testIds = ['pc-register', 'control-unit', 'alu', 'data-memory', 'instruction-memory', 'register-file'];
-      testIds.forEach(testId => {
+      const testIds = [
+        "pc-register",
+        "control-unit",
+        "alu",
+        "data-memory",
+        "instruction-memory",
+        "register-file",
+      ];
+      testIds.forEach((testId) => {
         const el = svgDoc.getElementById(testId);
         if (el) {
           console.log(`✓ Found: ${testId}`);
@@ -1727,7 +1979,7 @@
           el.style.fill = "rgba(255,0,0,0.3)";
           el.style.stroke = "#ff0000";
           el.style.strokeWidth = "2";
-          
+
           // Remove after 2 seconds
           setTimeout(() => {
             el.style.fill = "";
@@ -1738,12 +1990,45 @@
           console.log(`✗ Missing: ${testId}`);
         }
       });
-
     } catch (e) {
       alert(`SVG debug error: ${e.message}`);
       console.error("SVG debug error:", e);
     }
   });
+
+  function bringPathsToFront(highlightedPaths) {
+    if (!svgDoc) return;
+
+    // Find the data-paths group
+    const dataPathsGroup = svgDoc.getElementById("data-paths");
+    if (!dataPathsGroup) return;
+
+    // Move highlighted paths to the end of the group (renders last = on top)
+    highlightedPaths.forEach((pathId) => {
+      const pathElement = svgDoc.getElementById(pathId);
+      if (pathElement && dataPathsGroup.contains(pathElement)) {
+        // Remove and re-append to move to end (renders on top)
+        pathElement.parentNode.appendChild(pathElement);
+      }
+    });
+  }
+
+  function clearPersistentTextAnimations() {
+    /* Clear all persistent text elements - used only for reset/new program */
+    if (!svgDoc) {
+      console.warn("clearPersistentTextAnimations: No SVG document available");
+      return;
+    }
+
+    try {
+      const persistentTexts = svgDoc.querySelectorAll(".signal-text");
+      persistentTexts.forEach((text) => text.remove());
+      console.log(`Cleared ${persistentTexts.length} persistent text elements`);
+    } catch (err) {
+      console.error("Error clearing persistent text animations:", err);
+    }
+  }
+
   // --- Event Listeners ---
 
   svgObject.addEventListener("load", () => {
@@ -1816,11 +2101,12 @@
   });
 
   loadProgramButton.addEventListener("click", async () => {
-    /* Unchanged */
+    /* Clear persistent text when loading new program */
     stopAutoRun();
     const code = codeEditor.value;
     updateStatus("Loading and Resetting...");
     clearLog();
+    clearPersistentTextAnimations(); // Clear text before loading new program
     resetAllSvgStyles();
     highlightLine(-1);
     populateCodeDisplay(code);
@@ -1918,10 +2204,11 @@
   });
 
   resetButton.addEventListener("click", async () => {
-    /* Unchanged */
+    /* Clear persistent text when resetting */
     stopAutoRun();
     updateStatus("Resetting simulation...");
     clearLog();
+    clearPersistentTextAnimations(); // Clear text before reset
     resetAllSvgStyles();
     highlightLine(-1);
     codeEditor.style.display = "block";
