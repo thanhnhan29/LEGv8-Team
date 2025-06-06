@@ -188,6 +188,39 @@ class SimulatorEngine:
                 # Add control signal paths for visualization
                 control_paths = ["control-uncondbranch-enable", "control-branch-enable", 'control-memread-enable', 'control-memtoreg-enable', 'control-reg2loc-enable', 'control-aluop-enable', 'control-memwrite-enable', 'control-alusrc-enable', 'control-regwrite-enable']
                 active_paths_id.extend(control_paths)
+                
+                # Add control signal animations
+                control_signal_animations = []
+                start_delay_base = 0.15
+                for i, (signal_name, signal_value) in enumerate(control_values.items()):
+                    control_path_map = {
+                        'UncondBranch': 'control-uncondbranch-enable',
+                        'Branch': 'control-branch-enable',
+                        'MemRead': 'control-memread-enable',
+                        'MemToReg': 'control-memtoreg-enable',
+                        'Reg2Loc': 'control-reg2loc-enable',
+                        'ALUOp': 'control-aluop-enable',
+                        'MemWrite': 'control-memwrite-enable',
+                        'ALUSrc': 'control-alusrc-enable',
+                        'RegWrite': 'control-regwrite-enable'
+                    }
+                    
+                    if signal_name in control_path_map:
+                        path_id = control_path_map[signal_name]
+                        # Format signal value for display
+                        if isinstance(signal_value, str):
+                            display_value = signal_value
+                        else:
+                            display_value = str(signal_value)
+                        
+                        control_signal_animations.append({
+                            "path_id": path_id,
+                            "bits": [display_value],
+                            "duration": 0.2,
+                            "start_delay": start_delay_base + (i * 0.05)  # Stagger animations slightly
+                        })
+                
+                animated_signals_id.extend(control_signal_animations)
                 #print(control_values)
                 handlers = INSTRUCTION_HANDLERS.get(opcode)
                 if not handlers or 'decode' not in handlers:
@@ -293,8 +326,14 @@ class SimulatorEngine:
                 alu_zero_flag = exec_result.get('alu_zero_flag', 0)
                 branch_target_addr_val = exec_result.get('branch_target_addr', 0)
 
-                # ... (visualization for ALU result and branch target calculation)
-                if control_values.get('ALUOp') != 'XX':
+                # ... (visualization for ALU control signal and results)
+                alu_op = control_values.get('ALUOp', 'XX')
+                if alu_op != 'XX':
+                    # Add ALU Control to ALU signal path
+                    #active_paths_ex.append("control-alucontrol-alu")
+                    #animated_signals_ex.append({"path_id": "control-alucontrol-alu", "bits":[alu_op], "duration": 0.15, "start_delay": 0.1})
+                    
+                    # ALU result and zero flag
                     active_paths_ex.append("path-alu-result") 
                     animated_signals_ex.append({"path_id": "path-alu-result", "bits":[f"0x{alu_result_val:X}"], "duration": 0.3, "start_delay": 0.2})
                     active_paths_ex.append("path-alu-zero")
@@ -344,21 +383,21 @@ class SimulatorEngine:
 
                 if mem_read_ctrl == 1:
                     if "block-datamem" not in active_blocks_mem: active_blocks_mem.append("block-datamem")
-                    active_paths_mem.extend(["path-alu-result", "control-memread-enable"])
+                    active_paths_mem.extend(["path-alu-result"])
                     animated_signals_mem.extend([
                         {"path_id": "path-alu-result", "bits":[f"0x{mem_address_for_vis:X}"], "duration": 0.2},
-                        {"path_id": "control-memread-enable", "bits":["READ"], "duration": 0.1}
+                        #{"path_id": "control-memread-enable", "bits":["READ"], "duration": 0.1}
                     ])
                     if data_read_from_mem is not None:
                         active_paths_mem.append("path-mem-readdata")
                         animated_signals_mem.append({"path_id": "path-mem-readdata", "bits":[f"0x{data_read_from_mem:X}"], "duration": 0.3, "start_delay": 0.2})
                 elif mem_write_ctrl == 1:
                     if "block-datamem" not in active_blocks_mem: active_blocks_mem.append("block-datamem")
-                    active_paths_mem.extend(["path-alu-result", "path-rdata2-memwrite", "control-memwrite-enable"])
+                    active_paths_mem.extend(["path-alu-result", "path-rdata2-memwrite"])
                     animated_signals_mem.extend([
                         {"path_id": "path-alu-result", "bits":[f"0x{mem_address_for_vis:X}"], "duration": 0.2},
                         {"path_id": "path-rdata2-memwrite", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 0.1},
-                        {"path_id": "control-memwrite-enable", "bits":["WRITE"], "duration": 0.1}
+                        #{"path_id": "control-memwrite-enable", "bits":["WRITE"], "duration": 0.1}
                     ])
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_mem, active_blocks_mem, active_paths_mem, animated_signals_mem, control_values).to_dict()
             except (ValueError, TypeError, KeyError) as e:
@@ -390,10 +429,10 @@ class SimulatorEngine:
                     if data_to_write_back is not None and dest_reg:
                         wb_specific_log += f"  Write Back Stage: RegWrite=1 for {dest_reg}.\n"
                         # ... (visualization for RegWrite and Mux3)
-                        active_paths_wb.extend(["control-regwrite-enable"])
-                        animated_signals_wb.extend([
-                            {"path_id": "control-regwrite-enable", "bits":["WR_EN"],"duration":0.1},
-                        ])
+                        #active_paths_wb.extend(["control-regwrite-enable"])
+                        # animated_signals_wb.extend([
+                        #     {"path_id": "control-regwrite-enable", "bits":["WR_EN"],"duration":0.1},
+                        # ])
                         wb_path_mux_out = "path-mux3-wb"  
                         wb_path_to_regs = "path-mux3-wb" # Use same path since they connect
                         active_paths_wb.extend([wb_path_mux_out])

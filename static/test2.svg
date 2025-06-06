@@ -178,8 +178,6 @@
   <g id="block-mux3">
     <rect x="980" y="600" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
     <text x="1000" y="622" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
-    <text x="1025" y="603" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
-    <text x="1025" y="627" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
   </g>
 
   <!-- Shift Left 2 -->
@@ -292,7 +290,7 @@
   </g>
 
   <!-- Control Lines (with proper IDs for simulation highlighting) -->
-  <g id="control-lines" stroke="#1976D2" stroke-width="2" fill="none">
+  <g id="control-lines" stroke="#1976D2" stroke-width="2" fill="none" stroke-dasharray="5,3">
     <!-- Control Unit to OR gate (Uncondbranch) - Direct path -->
     <path id="control-uncondbranch-enable" d="M460 220 L440 220 L440 75 L920 75 L920 140" marker-end="url(#arrowheadBlue)"/>
     
@@ -313,12 +311,13 @@
     
     <!-- Control Unit to Data Memory (MemWrite) - Direct path -->
     <path id="control-memwrite-enable" d="M640 232 L1040 232 L1040 525" marker-end="url(#arrowheadBlue)"/>
-    
+    <!-- ALU Control to ALU operation signal -->
+    <path id="control-alucontrol-alu" d="M855 590 L855 535" marker-end="url(#arrowheadBlue)"/>
     <!-- Control Unit to ALUSrc Mux (ALUSrc) - Direct path -->
     <path id="control-alusrc-enable" d="M640 244 L750 244 L750 485" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Register File (RegWrite) - Direct path -->
-    <path id="control-regwrite-enable" d="M640 256 L650 256 L650 555 L580 555" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-regwrite-enable" d="M640 256 L650 256 L650 415" marker-end="url(#arrowheadBlue)"/>
 
     <!-- Logic gate connections -->
     <path id="path-and-or" d="M870 155 L885 155 L885 155 L900 155" marker-end="url(#arrowheadBlue)"/>
