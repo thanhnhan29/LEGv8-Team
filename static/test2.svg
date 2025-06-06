@@ -125,10 +125,10 @@
 
   <!-- Mux (Write Register Destination) - Reg2Loc -->
   <g id="block-mux1">
-    <rect x="530" y="480" width="40" height="35" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
-    <text x="550" y="500" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
-    <text x="575" y="490" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
-    <text x="575" y="510" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
+    <rect x="530" y="460" width="40" height="35" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="550" y="480" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <!-- <text x="575" y="490" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="575" y="510" font-family="Arial" font-size="7" fill="#2E7D32">1</text> -->
   </g>
 
   <!-- Sign Extend -->
@@ -221,7 +221,6 @@
     <text x="440" y="420">Instruction [9-5]</text> <!-- To Read Reg 1 -->
     <text x="445" y="475">Instruction [20-16]</text> <!-- To Reg2Loc Mux -->
     <text x="445" y="495">Instruction [4-0]</text> <!-- To Write Reg -->
-    <text x="565" y="473">to Read reg 2</text> <!-- Mux output -->
     <text x="375" y="648">Instruction [31-0]</text> <!-- To Sign Extend -->
     <text x="445" y="593">Instruction [31-21]</text> <!-- To ALU Control -->
   </g>
@@ -231,9 +230,9 @@
     <!-- PC Connections -->
     <path id="path-pc-imem" stroke="#333" d="M230 500 L280 500" marker-end="url(#arrowhead)"/>
     <path id="path-pc-adder1" stroke="#333" d="M190 475 L190 175 L240 175" marker-end="url(#arrowhead)"/>
-    <path stroke="#333" d="M220 155 L240 155" marker-end="url(#arrowhead)"/>
+    <path id="path-4-adder" stroke="#333" d="M220 155 L240 155" marker-end="url(#arrowhead)"/>
     <path id="path-adder1-mux4-in0" stroke="#333" d="M310 155 L370 155 L370 130 L980 130 L980 150" marker-end="url(#arrowhead)"/>
-    <path id="path-mux4-pc" stroke="#333" d="M1020 150 L1050 150 L1050 115 L190 115 L190 475" marker-end="url(#arrowhead)"/>
+    <path id="path-mux4-pc" stroke="#333" d="M1020 150 L1050 150 L1050 115 L135 115 L135 500 L155 500" marker-end="url(#arrowhead)"/>
 
     <!-- Instruction Memory Outputs (from common junction point) -->
     <path id="path-imem-out" stroke="#333" d="M400 500 L430 500" marker-end="url(#arrowhead)"/>
@@ -242,20 +241,24 @@
     <!-- To Register File Read reg 1 [9-5] -->
     <path id="path-instr-regs" stroke="#333" d="M430 500 L430 430 L580 430" marker-end="url(#arrowhead)"/>
     <!-- To Reg2Loc Mux input 0 [20-16] -->
-    <path id="path-instr-reg2loc" stroke="#333" d="M430 500 L430 485 L530 485" marker-end="url(#arrowhead)"/>
+    <path id="path-instr-reg2loc-0" stroke="#333" d="M430 500 L430 485 L530 485" marker-end="url(#arrowhead)"/>
+    <!-- To Reg2Loc Mux input 1 [4-0] for stores -->
+    <path id="path-instr-reg2loc-1" stroke="#333" d="M430 500 L430 505 L520 505 L520 495 L530 495" marker-end="url(#arrowhead)"/>
     <!-- To Write Register (direct from [4-0]) -->
     <path id="path-instr-regwriteaddr" stroke="#333" d="M430 500 L430 505 L580 505" marker-end="url(#arrowhead)"/>
     <!-- To Sign Extend [31-0] -->
     <path id="path-instr-signext" stroke="#333" d="M430 500 L430 690 L450 690" marker-end="url(#arrowhead)"/>
+    <!-- Branch offset to Sign Extend -->
+    <!-- <path id="path-instr-signext-br" stroke="#333" d="M430 500 L430 680 L450 680" marker-end="url(#arrowhead)"/> -->
     <!-- To ALU Control [31-21] for function field -->
-    <path id="path-instr-alucontrol" stroke="#333" d="M430 500 L430 605 L795 605" marker-end="url(#arrowhead)"/>
+    <path id="path-instr-alucontrol" stroke="#333" d="M430 500 L430 615 L795 615" marker-end="url(#arrowhead)"/>
 
     <!-- Reg2Loc Mux output to Read reg 2 -->
-    <path id="path-reg2loc-out" stroke="#333" d="M570 497 L580 470" marker-end="url(#arrowhead)"/>
+    <path id="path-reg2loc-out" stroke="#333" d="M570 470 L580 470" marker-end="url(#arrowhead)"/>
 
     <!-- Register File Outputs -->
     <path id="path-regs-rdata1" stroke="#333" d="M700 430 L780 430 L780 455" marker-end="url(#arrowhead)"/>
-    <path id="path-regs-rdata2" stroke="#333" d="M700 465 L730 495" marker-end="url(#arrowhead)"/>
+    <path id="path-regs-rdata2" stroke="#333" d="M700 465 L735 465 L735 480" marker-end="url(#arrowhead)"/>
     <!-- Register read data 2 to Data Memory write data -->
     <path id="path-rdata2-memwrite" stroke="#333" d="M700 465 L715 465 L715 390 L965 390 L965 515 L1000 515" marker-end="url(#arrowhead)"/>
 
@@ -263,8 +266,8 @@
     <path id="path-signext-out-mux2" stroke="#333" d="M570 690 L715 690 L715 515 L730 515" marker-end="url(#arrowhead)"/>
     <!-- ALUSrc Mux to ALU -->
     <path id="path-mux2-alu" stroke="#333" d="M770 502 L780 485" marker-end="url(#arrowhead)"/>
-    <!-- Register Data 2 to ALUSrc Mux -->
-    <path id="path-regs-rdata2-mux2" stroke="#333" d="M700 465 L730 495" marker-end="url(#arrowhead)"/>
+    <!-- Register Data 2 to ALUSrc Mux (separate from general rdata2) -->
+    <!-- <path id="path-regs-rdata2-mux2" stroke="#333" d="M700 465 L730 495" marker-end="url(#arrowhead)"/> -->
     <!-- Register Data 1 to ALU -->
     <path id="path-rdata1-alu" stroke="#333" d="M700 430 L780 430 L780 455" marker-end="url(#arrowhead)"/>
     <!-- ALU Result to Data Memory Address -->
@@ -285,40 +288,40 @@
     <!-- PC+4 to Branch Adder -->
     <path id="path-pc-adder2" stroke="#333" d="M300 155 L710 155 L710 148 L750 148" marker-end="url(#arrowhead)"/>
     <!-- Branch Adder to OR Gate -->
-    <path id="path-adder2-mux4-in1" stroke="#333" d="M800 155 L855 155 L855 154 L900 154" marker-end="url(#arrowhead)"/>
+    <path id="path-adder2-or" stroke="#333" d="M800 155 L855 155 L855 154 L900 154" marker-end="url(#arrowhead)"/>
   </g>
 
-  <!-- Control Lines (Fixed and cleaned up) -->
+  <!-- Control Lines (with proper IDs for simulation highlighting) -->
   <g id="control-lines" stroke="#1976D2" stroke-width="2" fill="none">
     <!-- Control Unit to OR gate (Uncondbranch) - Direct path -->
-    <path d="M460 220 L440 220 L440 75 L920 75 L920 140" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-uncondbranch-enable" d="M460 220 L440 220 L440 75 L920 75 L920 140" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to AND gate (Branch) - Direct path -->
-    <path d="M460 232 L420 232 L420 80 L850 80 L850 140" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-branch-enable" d="M460 232 L420 232 L420 80 L850 80 L850 140" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemRead) - Route straight right then down -->
-    <path d="M640 244 L1030 244 L1030 425" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memread-enable" d="M640 244 L1030 244 L1030 425" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to MemToReg Mux (MemtoReg) - Route down to MUX -->
-    <path d="M460 256 L410 256 L410 730 L1000 730 L1000 630" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memtoreg-enable" d="M460 256 L410 256 L410 730 L1000 730 L1000 630" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Reg2Loc Mux (Reg2Loc) - Direct path -->
-    <path d="M460 268 L475 268 L475 498" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-reg2loc-enable" d="M460 268 L475 268 L475 498" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to ALU Control (ALUOp) - Direct path -->
-    <path d="M640 220 L840 220 L840 590" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-aluop-enable" d="M640 220 L840 220 L840 590" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemWrite) - Direct path -->
-    <path d="M640 232 L1040 232 L1040 525" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memwrite-enable" d="M640 232 L1040 232 L1040 525" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to ALUSrc Mux (ALUSrc) - Direct path -->
-    <path d="M640 244 L750 244 L750 485" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-alusrc-enable" d="M640 244 L750 244 L750 485" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Register File (RegWrite) - Direct path -->
-    <path d="M640 256 L650 256 L650 555 L580 555" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-regwrite-enable" d="M640 256 L650 256 L650 555 L580 555" marker-end="url(#arrowheadBlue)"/>
 
     <!-- Logic gate connections -->
-    <path d="M870 155 L885 155 L885 155 L900 155" marker-end="url(#arrowheadBlue)"/>
-    <path d="M940 155 L965 155 L965 155 L980 155" marker-end="url(#arrowheadBlue)"/>
+    <path id="path-and-or" d="M870 155 L885 155 L885 155 L900 155" marker-end="url(#arrowheadBlue)"/>
+    <path id="path-or-mux4" d="M940 155 L965 155 L965 155 L980 155" marker-end="url(#arrowheadBlue)"/>
   </g>
 </svg>

@@ -18,6 +18,7 @@ class SimulatorEngine:
         self.data_memory = Memory(memory_type="data")
         self.instruction_memory = Memory(memory_type="instruction") # Holds processed instructions
         self.raw_instruction_memory = Memory(memory_type="instruction") # Holds original user strings
+        self.binary_instruction_memory = Memory(memory_type="instruction") # NEW: Holds binary representations
         self.label_table = {} # label_name -> address
 
         self.control_unit = ControlUnit()
@@ -41,6 +42,7 @@ class SimulatorEngine:
         self.data_memory.initialize()
         self.instruction_memory.initialize()
         self.raw_instruction_memory.initialize()
+        self.binary_instruction_memory.initialize()  # NEW: Initialize binary memory
         self.label_table = {}
         
         self.current_instruction_generator = None
@@ -54,10 +56,15 @@ class SimulatorEngine:
         self.instruction_completed_flag = False
         print("--- Simulator engine state reset to defaults. ---")
 
-    def load_program_data(self, processed_instr_dict, raw_instr_dict, labels_dict):
+    def load_program_data(self, processed_instr_dict, raw_instr_dict, labels_dict, binary_instr_dict=None):
         self.initialize_state() # Reset before loading new program
         self.instruction_memory.load_instructions(processed_instr_dict)
         self.raw_instruction_memory.load_instructions(raw_instr_dict) # Store raw strings
+        
+        # NEW: Load binary instructions if provided
+        if binary_instr_dict:
+            self.binary_instruction_memory.load_instructions(binary_instr_dict)
+        
         self.label_table = labels_dict.copy()
         
         self.pc = 0 # Start execution at address 0
@@ -82,9 +89,16 @@ class SimulatorEngine:
             "pc": f"0x{self.pc:X}",
             "registers": self.registers.get_display_dict(),
             "data_memory": self.data_memory.get_display_dict(),
-            # Optionally include instruction memory if useful for UI
-            # "instruction_memory": self.instruction_memory.get_display_dict(type="raw") 
+            # NEW: Include binary instruction at current PC if available
+            "current_binary": self._get_current_binary_instruction(),
         }
+
+    def _get_current_binary_instruction(self):
+        """Get binary representation of instruction at current PC"""
+        try:
+            return self.binary_instruction_memory.fetch_instruction(self.pc)
+        except ValueError:
+            return "00000000000000000000000000000000"  # Return NOP if not found
 
     def _execute_instruction_detailed_generator(self):
         """
@@ -120,10 +134,11 @@ class SimulatorEngine:
             stage_log_if = f"[{current_stage_name} @ PC=0x{current_pc_of_instruction:X}]\n"
             # ... (active_blocks, active_paths, animated_signals setup for IF)
             active_blocks_if = ["block-pc", "block-imem", "block-adder1"]
-            active_paths_if = ["path-pc-imem", "path-pc-adder1"]
+            active_paths_if = ["path-pc-imem", "path-pc-adder1","path-4-adder"]
             animated_signals_if = [
-                {"path_id": "path-pc-imem", "bits": [1], "duration": 0.3},
-                {"path_id": "path-pc-adder1", "bits": [1], "duration": 0.2},
+                {"path_id": "path-pc-imem", "bits": [f"0x{current_pc_of_instruction}"], "duration": 0.3},
+                {"path_id": "path-pc-adder1", "bits": [f"0x{current_pc_of_instruction}"], "duration": 0.2},
+                {"path_id": "path-4-adder", "bits": [f"0x4"], "duration": 0.2},
             ]
             try:
                 instruction_str_processed = self.instruction_memory.fetch_instruction(current_pc_of_instruction)
@@ -137,7 +152,7 @@ class SimulatorEngine:
             stage_log_if += f"  PC+4 Adder -> 0x{pc_p4:X}"
             # ... (update paths/signals for IF)
             active_paths_if.append("path-adder1-mux4-in0") 
-            animated_signals_if.append({"path_id": "path-adder1-mux4-in0", "bits":[1], "duration": 0.2, "start_delay": 0.2})
+            animated_signals_if.append({"path_id": "path-adder1-mux4-in0", "bits":[pc_p4], "duration": 0.2, "start_delay": 0.2})
             yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_if, active_blocks_if, active_paths_if, animated_signals_if).to_dict()
             final_next_pc = pc_p4
 
@@ -146,23 +161,34 @@ class SimulatorEngine:
             current_stage_name = "Decode"
             current_micro_step_index_yield = 1
             stage_log_id = f"[{current_stage_name}]\n"
-            # ... (active_blocks, active_paths, animated_signals setup for ID)
-            active_blocks_id = ["block-control", "block-regs"]
-            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs"]
-            animated_signals_id = [
-                {"path_id": "path-imem-out", "bits":[1], "duration": 0.1},
-                {"path_id": "path-instr-control", "bits":[1], "duration": 0.2},
-                {"path_id": "path-instr-regs", "bits":[1], "duration": 0.2},
-            ]
+            
             try:
                 instruction_str_upper = instruction_str_processed.strip().upper()
                 parts = re.split(r'[,\s()\[\]]+', instruction_str_upper)
                 parts = [p for p in parts if p]
                 opcode = parts[0].upper() if parts else "NOP"
                 stage_log_id += f"  Opcode Detected: {opcode}\n"
+            except Exception as e:
+                opcode = "NOP"
+                stage_log_id += f"  Error extracting opcode, defaulting to NOP: {e}\n"
+            
+            # ... (active_blocks, active_paths, animated_signals setup for ID)
+            active_blocks_id = ["block-control", "block-regs"]
+            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs", "path-instr-regwriteaddr"]
+            animated_signals_id = [
+                {"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},
+                {"path_id": "path-instr-control", "bits":[f"{opcode}"], "duration": 0.2},
+                {"path_id": "path-instr-regs", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg1_addr')}"], "duration": 0.2},
+                {"path_id": "path-instr-regwriteaddr", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2}
+            ]
+            #yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
 
+            try:
                 control_values = self.control_unit.get_control_signals(opcode)
-                
+                # Add control signal paths for visualization
+                control_paths = ["control-uncondbranch-enable", "control-branch-enable", 'control-memread-enable', 'control-memtoreg-enable', 'control-reg2loc-enable', 'control-aluop-enable', 'control-memwrite-enable', 'control-alusrc-enable', 'control-regwrite-enable']
+                active_paths_id.extend(control_paths)
+                #print(control_values)
                 handlers = INSTRUCTION_HANDLERS.get(opcode)
                 if not handlers or 'decode' not in handlers:
                     raise ValueError(f"Unsupported or missing decode handler for {opcode}")
@@ -170,21 +196,21 @@ class SimulatorEngine:
                 decoded_info = decode_handler(parts)
                 decoded_info['opcode'] = opcode 
                 stage_log_id += decoded_info.get('log', "  (No decode log)") + "\n"
-
+                #print(decoded_info.get('log', "  (No decode log)") + "\n")
                 read_reg1_addr = decoded_info.get('read_reg1_addr')
                 read_reg2_addr = decoded_info.get('read_reg2_addr')
                 if read_reg1_addr:
                     read_data1 = self.registers.read(read_reg1_addr)
                     stage_log_id += f"  Read Register 1 ({read_reg1_addr}): 0x{read_data1:X}\n"
                     # ... (update paths/signals for reg read 1)
-                    active_paths_id.append("path-regs-rdata1")
-                    animated_signals_id.append({"path_id": "path-regs-rdata1", "bits":[1], "duration": 0.3, "start_delay": 0.2})
+                    #active_paths_id.append("path-regs-rdata1")
+                    #animated_signals_id.append({"path_id": "path-regs-rdata1", "bits":[f"0x{read_data1:X}"], "duration": 0.3, "start_delay": 0.2})
                 if read_reg2_addr:
                     read_data2 = self.registers.read(read_reg2_addr)
                     stage_log_id += f"  Read Register 2 ({read_reg2_addr}): 0x{read_data2:X}\n"
                     # ... (update paths/signals for reg read 2)
-                    active_paths_id.append("path-regs-rdata2")
-                    animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[1], "duration": 0.3, "start_delay": 0.2})
+                    #active_paths_id.append("path-regs-rdata2")
+                    #animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 0.2})
 
 
                 imm_val = decoded_info.get('imm_val')
@@ -194,10 +220,10 @@ class SimulatorEngine:
                     stage_log_id += f"  Sign Extend Immediate ({imm_bits}b): Val={imm_val} -> {sign_extended_imm} (0x{sign_extended_imm:X})\n"
                     # ... (update paths/signals for sign extend)
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
-                    active_paths_id.extend(["path-instr-signext", "path-signext-out-mux2"])
+                    active_paths_id.extend(["path-instr-signext"])
                     animated_signals_id.extend([
-                        {"path_id": "path-instr-signext", "bits":[1], "duration": 0.2, "start_delay": 0.1},
-                        {"path_id": "path-signext-out-mux2", "bits":[1], "duration": 0.3, "start_delay": 0.3}
+                        {"path_id": "path-instr-signext", "bits":[f"{imm_val}"], "duration": 0.2, "start_delay": 0.1},
+                        #{"path_id": "path-signext-out-mux2", "bits":[f"0x{sign_extended_imm:X}"], "duration": 0.3, "start_delay": 0.3}
                     ])
 
 
@@ -207,8 +233,8 @@ class SimulatorEngine:
                     stage_log_id += f"  Branch Offset Value: {branch_offset_val} ({branch_offset_bits}b)\n"
                     # ... (update paths/signals for branch offset if any in ID)
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
-                    active_paths_id.append("path-instr-signext-br") 
-                    animated_signals_id.append({"path_id": "path-instr-signext-br", "bits":[1], "duration": 0.2, "start_delay": 0.1})
+                    active_paths_id.append("path-instr-signext") 
+                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[1], "duration": 0.2, "start_delay": 0.1})
 
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
@@ -233,23 +259,23 @@ class SimulatorEngine:
                 # ... (logging and visualization for ALU inputs and Mux2)
                 reg1_source_name = decoded_info.get('read_reg1_addr', 'N/A')
                 stage_log_ex += f"  ALU Input 1 (from {reg1_source_name}): 0x{alu_input1_val:X}\n"
-                active_paths_ex.append("path-rdata1-alu")
-                animated_signals_ex.append({"path_id": "path-rdata1-alu", "bits":[1], "duration": 0.2})
+                active_paths_ex.append("path-regs-rdata1")
+                animated_signals_ex.append({"path_id": "path-regs-rdata1", "bits":[f"0x{alu_input1_val:X}"], "duration": 0.2})
 
                 if alu_src == 0: 
                     reg2_source_name = decoded_info.get('read_reg2_addr','N/A')
                     stage_log_ex += f"  ALU Input 2 (from {reg2_source_name}): 0x{alu_input2_val:X} (Mux2 Sel=0)\n"
-                    active_paths_ex.extend(["path-regs-rdata2-mux2", "path-mux2-alu", "mux-alusrc-in0"])
+                    active_paths_ex.extend(["path-regs-rdata2", "path-mux2-alu"])
                     animated_signals_ex.extend([
-                        {"path_id": "path-regs-rdata2-mux2", "bits":[1], "duration": 0.1},
-                        {"path_id": "path-mux2-alu", "bits":[1], "duration": 0.1, "start_delay": 0.1}
+                        {"path_id": "path-regs-rdata2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1},
+                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.1}
                     ])
                 else: 
                     stage_log_ex += f"  ALU Input 2 (from Imm): {alu_input2_val} (0x{alu_input2_val:X}) (Mux2 Sel=1)\n"
-                    active_paths_ex.extend(["path-signext-mux2", "path-mux2-alu", "mux-alusrc-in1"])
+                    active_paths_ex.extend(["path-signext-out-mux2", "path-mux2-alu"])
                     animated_signals_ex.extend([
-                        {"path_id": "path-signext-mux2", "bits":[1], "duration": 0.1},
-                        {"path_id": "path-mux2-alu", "bits":[1], "duration": 0.1, "start_delay": 0.1}
+                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1},
+                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.1}
                     ])
 
 
@@ -270,18 +296,18 @@ class SimulatorEngine:
                 # ... (visualization for ALU result and branch target calculation)
                 if control_values.get('ALUOp') != 'XX':
                     active_paths_ex.append("path-alu-result") 
-                    animated_signals_ex.append({"path_id": "path-alu-result", "bits":[1], "duration": 0.3, "start_delay": 0.2})
+                    animated_signals_ex.append({"path_id": "path-alu-result", "bits":[f"0x{alu_result_val:X}"], "duration": 0.3, "start_delay": 0.2})
                     active_paths_ex.append("path-alu-zero")
-                    animated_signals_ex.append({"path_id": "path-alu-zero", "bits":[alu_zero_flag], "duration": 0.1, "start_delay": 0.2})
+                    animated_signals_ex.append({"path_id": "path-alu-zero", "bits":[f"{alu_zero_flag}"], "duration": 0.1, "start_delay": 0.2})
 
                 if branch_target_addr_val != 0: 
                     if "block-adder2" not in active_blocks_ex: active_blocks_ex.append("block-adder2")
                     active_paths_ex.append("path-pc-adder2")
-                    animated_signals_ex.append({"path_id": "path-pc-adder2", "bits":[1], "duration": 0.2})
-                    active_paths_ex.append("path-signext-br-adder2") 
-                    animated_signals_ex.append({"path_id": "path-signext-br-adder2", "bits":[1], "duration": 0.2})
-                    active_paths_ex.append("path-adder2-mux4-in1")
-                    animated_signals_ex.append({"path_id": "path-adder2-mux4-in1", "bits":[1], "duration": 0.2, "start_delay": 0.2})
+                    animated_signals_ex.append({"path_id": "path-pc-adder2", "bits":[f"0x{current_pc_of_instruction:X}"], "duration": 0.2})
+                    active_paths_ex.append("path-shift-adder2") 
+                    animated_signals_ex.append({"path_id": "path-shift-adder2", "bits":[f"{branch_offset_val}"], "duration": 0.2})
+                    active_paths_ex.append("path-adder2-or")
+                    animated_signals_ex.append({"path_id": "path-adder2-or", "bits":[f"0x{branch_target_addr_val:X}"], "duration": 0.2, "start_delay": 0.2})
 
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_ex, active_blocks_ex, active_paths_ex, animated_signals_ex, control_values).to_dict()
@@ -318,21 +344,21 @@ class SimulatorEngine:
 
                 if mem_read_ctrl == 1:
                     if "block-datamem" not in active_blocks_mem: active_blocks_mem.append("block-datamem")
-                    active_paths_mem.extend(["path-alu-memaddr", "control-memread-enable"])
+                    active_paths_mem.extend(["path-alu-result", "control-memread-enable"])
                     animated_signals_mem.extend([
-                        {"path_id": "path-alu-memaddr", "bits":[1], "duration": 0.2},
-                        {"path_id": "control-memread-enable", "bits":[1], "duration": 0.1}
+                        {"path_id": "path-alu-result", "bits":[f"0x{mem_address_for_vis:X}"], "duration": 0.2},
+                        {"path_id": "control-memread-enable", "bits":["READ"], "duration": 0.1}
                     ])
                     if data_read_from_mem is not None:
                         active_paths_mem.append("path-mem-readdata")
-                        animated_signals_mem.append({"path_id": "path-mem-readdata", "bits":[1], "duration": 0.3, "start_delay": 0.2})
+                        animated_signals_mem.append({"path_id": "path-mem-readdata", "bits":[f"0x{data_read_from_mem:X}"], "duration": 0.3, "start_delay": 0.2})
                 elif mem_write_ctrl == 1:
                     if "block-datamem" not in active_blocks_mem: active_blocks_mem.append("block-datamem")
-                    active_paths_mem.extend(["path-alu-memaddr", "path-rdata2-memwrite", "control-memwrite-enable"])
+                    active_paths_mem.extend(["path-alu-result", "path-rdata2-memwrite", "control-memwrite-enable"])
                     animated_signals_mem.extend([
-                        {"path_id": "path-alu-memaddr", "bits":[1], "duration": 0.2},
-                        {"path_id": "path-rdata2-memwrite", "bits":[1], "duration": 0.3, "start_delay": 0.1},
-                        {"path_id": "control-memwrite-enable", "bits":[1], "duration": 0.1}
+                        {"path_id": "path-alu-result", "bits":[f"0x{mem_address_for_vis:X}"], "duration": 0.2},
+                        {"path_id": "path-rdata2-memwrite", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 0.1},
+                        {"path_id": "control-memwrite-enable", "bits":["WRITE"], "duration": 0.1}
                     ])
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_mem, active_blocks_mem, active_paths_mem, animated_signals_mem, control_values).to_dict()
             except (ValueError, TypeError, KeyError) as e:
@@ -364,31 +390,30 @@ class SimulatorEngine:
                     if data_to_write_back is not None and dest_reg:
                         wb_specific_log += f"  Write Back Stage: RegWrite=1 for {dest_reg}.\n"
                         # ... (visualization for RegWrite and Mux3)
-                        active_paths_wb.extend(["control-regwrite-enable", "path-instr-regwriteaddr"])
+                        active_paths_wb.extend(["control-regwrite-enable"])
                         animated_signals_wb.extend([
-                            {"path_id": "control-regwrite-enable", "bits":[1],"duration":0.1},
-                            {"path_id": "path-instr-regwriteaddr", "bits":[1],"duration":0.2}
+                            {"path_id": "control-regwrite-enable", "bits":["WR_EN"],"duration":0.1},
                         ])
                         wb_path_mux_out = "path-mux3-wb"  
-                        wb_path_to_regs = "path-wb-regwrite" 
-                        active_paths_wb.extend([wb_path_mux_out, wb_path_to_regs])
+                        wb_path_to_regs = "path-mux3-wb" # Use same path since they connect
+                        active_paths_wb.extend([wb_path_mux_out])
                         mux3_in_path, mux3_sel_path = "", ""
 
                         if mem_to_reg_ctrl == 0: 
                             wb_specific_log += f"  Write Back Stage: Mux3 selects ALU Result (0x{data_to_write_back:X}).\n"
-                            mux3_in_path = "path-alu-mux3-in0" 
-                            mux3_sel_path = "mux-memtoreg-in0" 
+                            mux3_in_path = "path-alu-result" # Use existing ALU result path
+                            mux3_sel_path = "control-memtoreg-enable" # Use existing control signal
                         elif mem_to_reg_ctrl == 1: 
                             wb_specific_log += f"  Write Back Stage: Mux3 selects Memory Data (0x{data_to_write_back:X}).\n"
-                            mux3_in_path = "path-mem-readdata-mux3" 
-                            mux3_sel_path = "mux-memtoreg-in1" 
+                            mux3_in_path = "path-mem-readdata" # Use existing memory read path
+                            mux3_sel_path = "control-memtoreg-enable" # Use existing control signal 
                         
                         if mux3_in_path: active_paths_wb.append(mux3_in_path)
                         if mux3_sel_path: active_paths_wb.append(mux3_sel_path)
                         animated_signals_wb.extend([
                             {"path_id": mux3_in_path, "bits":[1], "duration": 0.1},
                             {"path_id": wb_path_mux_out, "bits":[1], "duration": 0.2, "start_delay": 0.1},
-                            {"path_id": wb_path_to_regs, "bits":[1], "duration": 0.1, "start_delay": 0.3},
+                            {"path_id": wb_path_mux_out, "bits":[1], "duration": 0.1, "start_delay": 0.3},
                         ])
                         
                         try:
@@ -433,11 +458,11 @@ class SimulatorEngine:
                 active_paths_wb.append(path_mux4_out)
                 mux4_in_path_vis, mux4_sel_path_vis = "", ""
                 if pc_src_signal == 1: 
-                    mux4_in_path_vis = "path-adder2-mux4-in1"
-                    mux4_sel_path_vis = "mux-pcsrc-in1" 
+                    mux4_in_path_vis = "path-adder2-or"
+                    mux4_sel_path_vis = "control-branch-enable" 
                 else: 
                     mux4_in_path_vis = "path-adder1-mux4-in0"
-                    mux4_sel_path_vis = "mux-pcsrc-in0"
+                    mux4_sel_path_vis = "control-uncondbranch-enable"
                 active_paths_wb.extend([mux4_in_path_vis, mux4_sel_path_vis])
                 animated_signals_wb.extend([
                     {"path_id": mux4_in_path_vis, "bits":[1], "duration": 0.1 },

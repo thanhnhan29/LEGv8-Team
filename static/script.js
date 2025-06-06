@@ -128,6 +128,13 @@
     }
     
     /* Text animation styles */
+    .signal-text-group {
+      z-index: 1500 !important;
+      position: relative !important;
+      pointer-events: none !important;
+      user-select: none !important;
+    }
+    
     .signal-text {
       z-index: 1500 !important;
       position: relative !important;
@@ -135,45 +142,77 @@
       user-select: none !important;
       font-family: 'Arial', sans-serif !important;
       font-weight: 900 !important; /* Extra bold for better visibility */
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.8) !important;
-      filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.6)) !important;
+    }
+    
+    .signal-text-background {
+      z-index: 1499 !important;
+      position: relative !important;
+      pointer-events: none !important;
+      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3)) !important;
     }
     
     /* Different colors for different data types with enhanced contrast */
-    .signal-text[data-path-id*="pc"] {
+    .signal-text-group[data-path-id*="pc"] .signal-text {
       fill: #1976D2 !important;
-      stroke: #FFFFFF !important;
-      stroke-width: 2px !important;
     }
     
-    .signal-text[data-path-id*="instr"] {
+    .signal-text-group[data-path-id*="pc"] .signal-text-background {
+      fill: rgba(255, 255, 255, 0.95) !important;
+      stroke: #1976D2 !important;
+    }
+    
+    .signal-text-group[data-path-id*="instr"] .signal-text {
       fill: #FF9800 !important;
-      stroke: #000000 !important;
-      stroke-width: 2px !important;
     }
     
-    .signal-text[data-path-id*="reg"] {
+    .signal-text-group[data-path-id*="instr"] .signal-text-background {
+      fill: rgba(255, 255, 255, 0.95) !important;
+      stroke: #FF9800 !important;
+    }
+    
+    .signal-text-group[data-path-id*="reg"] .signal-text {
       fill: #4CAF50 !important;
-      stroke: #FFFFFF !important;
-      stroke-width: 2px !important;
     }
     
-    .signal-text[data-path-id*="alu"] {
+    .signal-text-group[data-path-id*="reg"] .signal-text-background {
+      fill: rgba(255, 255, 255, 0.95) !important;
+      stroke: #4CAF50 !important;
+    }
+    
+    .signal-text-group[data-path-id*="alu"] .signal-text {
       fill: #E91E63 !important;
-      stroke: #FFFFFF !important;
-      stroke-width: 2px !important;
     }
     
-    .signal-text[data-path-id*="mem"] {
+    .signal-text-group[data-path-id*="alu"] .signal-text-background {
+      fill: rgba(255, 255, 255, 0.95) !important;
+      stroke: #E91E63 !important;
+    }
+    
+    .signal-text-group[data-path-id*="mem"] .signal-text {
       fill: #9C27B0 !important;
-      stroke: #FFFFFF !important;
-      stroke-width: 2px !important;
     }
     
-    .signal-text[data-path-id*="mux"] {
+    .signal-text-group[data-path-id*="mem"] .signal-text-background {
+      fill: rgba(255, 255, 255, 0.95) !important;
+      stroke: #9C27B0 !important;
+    }
+    
+    .signal-text-group[data-path-id*="mux"] .signal-text {
       fill: #FF5722 !important;
-      stroke: #FFFFFF !important;
-      stroke-width: 2px !important;
+    }
+    
+    .signal-text-group[data-path-id*="mux"] .signal-text-background {
+      fill: rgba(255, 255, 255, 0.95) !important;
+      stroke: #FF5722 !important;
+    }
+    
+    .signal-text-group[data-path-id*="control"] .signal-text {
+      fill: #1976D2 !important;
+    }
+    
+    .signal-text-group[data-path-id*="control"] .signal-text-background {
+      fill: rgba(227, 242, 253, 0.95) !important;
+      stroke: #1976D2 !important;
     }
   `;
   document.head.appendChild(highlightStyles);
@@ -989,6 +1028,20 @@
   function createSignalText(svgDoc, text, pathId) {
     if (!svgDoc) return null;
 
+    // Create a group to hold background and text
+    const textGroup = svgDoc.createElementNS("http://www.w3.org/2000/svg", "g");
+    textGroup.classList.add("signal-text-group");
+    textGroup.setAttribute("data-path-id", pathId);
+
+    // Create background rectangle
+    const backgroundRect = svgDoc.createElementNS("http://www.w3.org/2000/svg", "rect");
+    backgroundRect.classList.add("signal-text-background");
+    backgroundRect.setAttribute("fill", "rgba(255, 255, 255, 0.9)");
+    backgroundRect.setAttribute("stroke", "#333333");
+    backgroundRect.setAttribute("stroke-width", "1");
+    backgroundRect.setAttribute("rx", "3"); // Rounded corners
+    backgroundRect.setAttribute("ry", "3");
+
     // Create text element with enhanced styling
     const textElement = svgDoc.createElementNS(
       "http://www.w3.org/2000/svg",
@@ -999,17 +1052,36 @@
     textElement.setAttribute("font-size", "12");
     textElement.setAttribute("font-weight", "bold");
     textElement.setAttribute("fill", "#FF5722");
-    textElement.setAttribute("stroke", "#FFFFFF");
-    textElement.setAttribute("stroke-width", "1.5");
     textElement.setAttribute("text-anchor", "middle");
     textElement.setAttribute("dominant-baseline", "middle");
-    textElement.setAttribute("paint-order", "stroke fill"); // Stroke được vẽ trước
     textElement.textContent = text || "DATA";
 
-    // Add path reference for debugging and styling
-    textElement.setAttribute("data-path-id", pathId);
+    // Add background first, then text (so text appears on top)
+    textGroup.appendChild(backgroundRect);
+    textGroup.appendChild(textElement);
 
-    return textElement;
+    // Calculate background size based on text content
+    setTimeout(() => {
+      try {
+        const bbox = textElement.getBBox();
+        const padding = 4;
+        backgroundRect.setAttribute("x", bbox.x - padding);
+        backgroundRect.setAttribute("y", bbox.y - padding);
+        backgroundRect.setAttribute("width", bbox.width + padding * 2);
+        backgroundRect.setAttribute("height", bbox.height + padding * 2);
+      } catch (e) {
+        // Fallback if getBBox fails
+        const textLength = (text || "DATA").length;
+        const estimatedWidth = textLength * 8;
+        const estimatedHeight = 16;
+        backgroundRect.setAttribute("x", -estimatedWidth / 2 - 2);
+        backgroundRect.setAttribute("y", -estimatedHeight / 2 - 2);
+        backgroundRect.setAttribute("width", estimatedWidth + 4);
+        backgroundRect.setAttribute("height", estimatedHeight + 4);
+      }
+    }, 10);
+
+    return textGroup;
   }
 
   function animateSignalText(pathElement, signal, svgDoc) {
@@ -1035,7 +1107,7 @@
     // Remove existing text animations on the same path
     const currentPathId = signal.path_id;
     const existingTexts = svgDoc.querySelectorAll(
-      `.signal-text[data-path-id="${currentPathId}"]`
+      `.signal-text-group[data-path-id="${currentPathId}"]`
     );
     existingTexts.forEach((existingText) => {
       console.log(`🗑️ Removing existing text on path: ${currentPathId}`);
@@ -1084,7 +1156,7 @@
       "path-adder2-mux4-in1": "BR_TARGET",
     };
 
-    animationText = textMap[pathId] || "DATA";
+    animationText = signal.bits;
 
     // Slower, more cinematic animation speed
     const duration = 5 || 2.0; // Increased duration for slower movement
@@ -2021,7 +2093,7 @@
     }
 
     try {
-      const persistentTexts = svgDoc.querySelectorAll(".signal-text");
+      const persistentTexts = svgDoc.querySelectorAll(".signal-text-group");
       persistentTexts.forEach((text) => text.remove());
       console.log(`Cleared ${persistentTexts.length} persistent text elements`);
     } catch (err) {
