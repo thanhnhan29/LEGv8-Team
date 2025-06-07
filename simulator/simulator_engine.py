@@ -220,7 +220,7 @@ class SimulatorEngine:
                 
                 # Add control signal animations
                 control_signal_animations = []
-                start_delay_base = 0.15
+                start_delay_base = 0.10
                 for i, (signal_name, signal_value) in enumerate(control_values.items()):
                     control_path_map = {
                         'UncondBranch': 'control-uncondbranch-enable',
@@ -387,8 +387,8 @@ class SimulatorEngine:
                     #animated_signals_ex.append({"path_id": "control-alucontrol-alu", "bits":[alu_op], "duration": 0.15, "start_delay": 0.1})
                     
                     # ALU result and zero flag
-                    active_paths_ex.append("path-alu-result") 
-                    animated_signals_ex.append({"path_id": "path-alu-result", "bits":[f"0x{alu_result_val:X}"], "duration": 0.3, "start_delay": 0.2})
+                    active_paths_ex.append("path-alu-mux3") 
+                    animated_signals_ex.append({"path_id": "path-alu-mux3", "bits":[f"0x{alu_result_val:X}"], "duration": 0.3, "start_delay": 0.2})
                     active_paths_ex.append("path-alu-zero")
                     animated_signals_ex.append({"path_id": "path-alu-zero", "bits":[f"{alu_zero_flag}"], "duration": 0.1, "start_delay": 0.2})
 
@@ -493,15 +493,15 @@ class SimulatorEngine:
 
                         if mem_to_reg_ctrl == 0: 
                             wb_specific_log += f"  Write Back Stage: Mux3 selects ALU Result (0x{data_to_write_back:X}).\n"
-                            mux3_in_path = "path-alu-result" # Use existing ALU result path
+                            mux3_in_path = "path-alu-mux3" # Use existing ALU result path
                             mux3_sel_path = "control-memtoreg-enable" # Use existing control signal
                         elif mem_to_reg_ctrl == 1: 
                             wb_specific_log += f"  Write Back Stage: Mux3 selects Memory Data (0x{data_to_write_back:X}).\n"
                             mux3_in_path = "path-mem-readdata" # Use existing memory read path
                             mux3_sel_path = "control-memtoreg-enable" # Use existing control signal 
                         
-                        if mux3_in_path: active_paths_wb.append(mux3_in_path)
-                        if mux3_sel_path: active_paths_wb.append(mux3_sel_path)
+                        #if mux3_in_path: active_paths_wb.append(mux3_in_path)
+                        #if mux3_sel_path: active_paths_wb.append(mux3_sel_path)
                         
                         # data_to_write_back is guaranteed to be not None here due to the outer if condition
                         # (i.e., inside 'if data_to_write_back is not None and dest_reg:')
@@ -511,13 +511,13 @@ class SimulatorEngine:
 
                         # Animation for the Mux3 select signal (MemToReg)
                         # mux3_sel_path is "control-memtoreg-enable", its value is mem_to_reg_ctrl
-                        if mux3_sel_path: # This is "control-memtoreg-enable"
-                             temp_animations_for_wb.append({
-                                 "path_id": mux3_sel_path,
-                                 "bits": [str(mem_to_reg_ctrl)], # Animate the actual select signal value
-                                 "duration": 0.1,
-                                 "start_delay": 0.0 # Show selector first or concurrently
-                             })
+                        # if mux3_sel_path: # This is "control-memtoreg-enable"
+                        #      temp_animations_for_wb.append({
+                        #          "path_id": mux3_sel_path,
+                        #          "bits": [str(mem_to_reg_ctrl)], # Animate the actual select signal value
+                        #          "duration": 0.1,
+                        #          "start_delay": 0.0 # Show selector first or concurrently
+                        #      })
 
                         # Animation for the selected input path feeding into Mux3
                         if mux3_in_path:
@@ -531,10 +531,10 @@ class SimulatorEngine:
                                     # Fallback if data_read_from_mem is None when MemToReg=1
                                     selected_input_value_str = "0x0" # Defaulting for visualization
 
-                            if selected_input_value_str: # Ensure a string was set
-                                temp_animations_for_wb.append(
-                                    {"path_id": mux3_in_path, "bits": [selected_input_value_str], "duration": 0.1, "start_delay": 0.05} # After selector
-                                )
+                            # if selected_input_value_str: # Ensure a string was set
+                            #     temp_animations_for_wb.append(
+                            #         {"path_id": mux3_in_path, "bits": [selected_input_value_str], "duration": 0.1, "start_delay": 0.05} # After selector
+                            #     )
                         
                         # Animation for the output path of Mux3 (this shows data_to_write_back)
                         # wb_path_mux_out is the ID of the path coming out of Mux3
@@ -595,31 +595,31 @@ class SimulatorEngine:
                     mux4_sel_path_vis = "control-uncondbranch-enable" # Path visually representing PCSrc=0
                     selected_input_value_for_mux4_str = f"0x{pc_p4:X}"
                 
-                active_paths_wb.extend([mux4_in_path_vis, mux4_sel_path_vis])
-                
+                #active_paths_wb.extend([mux4_in_path_vis, mux4_sel_path_vis])
+                #active_paths_wb.extend([mux4_in_path_vis])
                 temp_animations_for_mux4 = []
                 # Animate the Mux4 select signal path with the value of PCSrc
-                if mux4_sel_path_vis:
-                    temp_animations_for_mux4.append({
-                        "path_id": mux4_sel_path_vis, 
-                        "bits": [str(pc_src_signal)], 
-                        "duration": 0.1,
-                        "start_delay": 0.0
-                    })
+                # if mux4_sel_path_vis:
+                #     temp_animations_for_mux4.append({
+                #         "path_id": mux4_sel_path_vis, 
+                #         "bits": [str(pc_src_signal)], 
+                #         "duration": 0.1,
+                #         "start_delay": 0.0
+                #     })
 
-                # Animate the selected input path feeding into Mux4
-                if mux4_in_path_vis and selected_input_value_for_mux4_str:
-                    temp_animations_for_mux4.append({
-                        "path_id": mux4_in_path_vis,
-                        "bits": [selected_input_value_for_mux4_str],
-                        "duration": 0.1,
-                        "start_delay": 0.05 
-                    })
+                # # Animate the selected input path feeding into Mux4
+                # if mux4_in_path_vis and selected_input_value_for_mux4_str:
+                #     temp_animations_for_mux4.append({
+                #         "path_id": mux4_in_path_vis,
+                #         "bits": [selected_input_value_for_mux4_str],
+                #         "duration": 0.1,
+                #         "start_delay": 0.05 
+                #     })
                 
                 # Animate the output path of Mux4
                 temp_animations_for_mux4.append({
                     "path_id": path_mux4_out,
-                    "bits": [f"0x{final_next_pc:X}"],
+                    "bits": [f"0x{final_next_pc+4194304:X}"],
                     "duration": 0.2,
                     "start_delay": 0.1 
                 })

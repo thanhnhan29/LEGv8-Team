@@ -167,17 +167,17 @@
   <!-- Data Memory -->
   <g id="block-datamem">
     <rect x="1000" y="425" width="120" height="160" fill="url(#memoryGradient)" stroke="#6C757D" stroke-width="2"/>
-    <text x="1025" y="445" font-family="Arial" font-size="9" fill="#495057">Address</text>
-    <text x="1025" y="515" font-family="Arial" font-size="9" fill="#495057">Write data</text>
-    <text x="1080" y="445" font-family="Arial" font-size="9" fill="#495057">Read data</text>
-    <text x="1060" y="570" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#495057">Data</text>
-    <text x="1060" y="583" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#495057">memory</text>
+    <text x="1010" y="445" font-family="Arial" font-size="9" fill="#495057">Address</text>
+    <text x="1010" y="515" font-family="Arial" font-size="9" fill="#495057">Write data</text>
+    <text x="1075" y="475" font-family="Arial" font-size="9" fill="#495057">Read data</text>
+    <text x="1060" y="565" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#495057">Data</text>
+    <text x="1060" y="578" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#495057">memory</text>
   </g>
 
   <!-- Mux (Write Data to Register - MemToRegMux) -->
   <g id="block-mux3">
-    <rect x="980" y="600" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
-    <text x="1000" y="615" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <rect x="950" y="630" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="970" y="645" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
   </g>
 
   <!-- Shift Left 2 -->
@@ -270,13 +270,15 @@
     <path id="path-rdata1-alu" stroke="#333" d="M700 430 L780 430 L780 455" marker-end="url(#arrowhead)"/>
     <!-- ALU Result to Data Memory Address -->
     <path id="path-alu-result" stroke="#333" d="M900 485 L940 485 L940 445 L1000 445" marker-end="url(#arrowhead)"/>
+    <!-- ALU Result to MUX -->
+    <path id="path-alu-mux3" stroke="#333" d="M900 485 L940 485 L940 640 L950 640 L955 640" marker-end="url(#arrowhead)"/>
     <!-- ALU Zero flag to AND gate -->
     <path id="path-alu-zero" stroke="#333" d="M820 435 L820 150 L830 150" marker-end="url(#arrowhead)"/>
 
     <!-- Data Memory Read Data to MemToReg Mux -->
-    <path id="path-mem-readdata" stroke="#333" d="M1120 475 L1150 475 L1150 630 L1020 630" marker-end="url(#arrowhead)"/>
+    <path id="path-mem-readdata" stroke="#333" d="M1120 475 L1150 475 L1150 640 L995 640" marker-end="url(#arrowhead)"/>
     <!-- MemToReg Mux to Register File Write Data -->
-    <path id="path-mux3-wb" stroke="#333" d="M980 615 L955 615 L955 655 L555 655 L555 540 L580 540" marker-end="url(#arrowhead)"/>
+    <path id="path-mux3-wb" stroke="#333" d="M950 655 L555 655 L555 540 L580 540" marker-end="url(#arrowhead)"/>
 
     <!-- Branch Logic -->
     <!-- Sign Extend to Shift Left 2 -->
@@ -301,16 +303,16 @@
     <path id="control-memread-enable" d="M510 244 L530 244 L 530 290 L1030 290 L1030 425" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to MemToReg Mux (MemtoReg) - Route down to MUX -->
-    <path id="control-memtoreg-enable" d="M460 256 L410 256 L410 730 L1000 730 L1000 630" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memtoreg-enable" d="M460 256 L410 256 L410 730 L970 730 L970 660" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Reg2Loc Mux (Reg2Loc) - Direct path -->
-    <path id="control-reg2loc-enable" d="M460 275 L550 275 L550 460" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-reg2loc-enable" d="M500 275 L500 320 L550 320 L550 460" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to ALU Control (ALUOp) - Direct path -->
     <path id="control-aluop-enable" d="M640 220 L840 220 L840 590" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemWrite) - Direct path -->
-    <path id="control-memwrite-enable" d="M640 232 L1040 232 L1040 525" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memwrite-enable" d="M640 232 L1055 232 L1055 425" marker-end="url(#arrowheadBlue)"/>
     <!-- ALU Control to ALU operation signal -->
     <path id="control-alucontrol-alu" d="M855 590 L855 535" marker-end="url(#arrowheadBlue)"/>
     <!-- Control Unit to ALUSrc Mux (ALUSrc) - Direct path -->
