@@ -61,7 +61,7 @@ def decode_cb_format(parts):
         raise ValueError(f"Decode Error: Invalid branch offset for CB-format: '{offset_str}'")
     return {'log': f"  Decode: CB-format (Rt={rt}, ByteOffset={offset_str} [19b origin])",
             'rt': rt, 'branch_offset_val': offset_val, 'branch_offset_bits': 19,
-            'read_reg1_addr': rt, 
+            'read_reg1_addr': rt,
             'read_reg2_addr': None}
 
 def decode_b_format(parts):

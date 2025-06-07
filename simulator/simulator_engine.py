@@ -10,7 +10,6 @@ from .control_unit import ControlUnit
 from .micro_step import MicroStepState
 from . import datapath_components as dpc # datapath_components
 from .instruction_handlers import INSTRUCTION_HANDLERS # The big dispatch table
-
 class SimulatorEngine:
     def __init__(self):
         self.pc = 0
@@ -156,18 +155,22 @@ class SimulatorEngine:
             # --- Micro-Step 0: Instruction Fetch (IF) ---
             current_stage_name = "Fetch"
             current_micro_step_index_yield = 0
-            stage_log_if = f"[{current_stage_name} @ PC=0x{current_pc_of_instruction:X}]\n"
+            stage_log_if = f"[{current_stage_name} @ PC=0x{current_pc_of_instruction+4194304:X}]\n"
             # ... (active_blocks, active_paths, animated_signals setup for IF)
             active_blocks_if = ["block-pc", "block-imem", "block-adder1"]
             active_paths_if = ["path-pc-imem", "path-pc-adder1","path-4-adder"]
             animated_signals_if = [
-                {"path_id": "path-pc-imem", "bits": [f"0x{current_pc_of_instruction}"], "duration": 0.3},
-                {"path_id": "path-pc-adder1", "bits": [f"0x{current_pc_of_instruction}"], "duration": 0.2},
+                {"path_id": "path-pc-imem", "bits": [f"0x{current_pc_of_instruction+4194304:X}"], "duration": 0.3},
+                {"path_id": "path-pc-adder1", "bits": [f"0x{current_pc_of_instruction+4194304:X}"], "duration": 0.2},
                 {"path_id": "path-4-adder", "bits": [f"0x4"], "duration": 0.2},
             ]
             try:
+                # Fetch the processed (string) instruction for logging and opcode detection
                 instruction_str_processed = self.instruction_memory.fetch_instruction(current_pc_of_instruction)
+                # Fetch the binary instruction
+                #bits_instruction = self.binary_instruction_memory.fetch_instruction(current_pc_of_instruction)
                 stage_log_if += f"  Fetched Processed Instruction: '{instruction_str_processed}'\n"
+                #stage_log_if += f"  Fetched Binary Instruction: {bits_instruction}\n" # Log the binary
             except ValueError as e:
                 stage_log_if += f"  Error: {e}\n"
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_if, active_blocks_if, active_paths_if, animated_signals_if).to_dict()
@@ -177,7 +180,7 @@ class SimulatorEngine:
             stage_log_if += f"  PC+4 Adder -> 0x{pc_p4:X}"
             # ... (update paths/signals for IF)
             active_paths_if.append("path-adder1-mux4-in0") 
-            animated_signals_if.append({"path_id": "path-adder1-mux4-in0", "bits":[pc_p4], "duration": 0.2, "start_delay": 0.2})
+            animated_signals_if.append({"path_id": "path-adder1-mux4-in0", "bits":[f"0x{pc_p4+4194304:X}"], "duration": 0.2, "start_delay": 0.2})
             yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_if, active_blocks_if, active_paths_if, animated_signals_if).to_dict()
             final_next_pc = pc_p4
 
@@ -475,11 +478,46 @@ class SimulatorEngine:
                         
                         if mux3_in_path: active_paths_wb.append(mux3_in_path)
                         if mux3_sel_path: active_paths_wb.append(mux3_sel_path)
-                        animated_signals_wb.extend([
-                            {"path_id": mux3_in_path, "bits":[1], "duration": 0.1},
-                            {"path_id": wb_path_mux_out, "bits":[1], "duration": 0.2, "start_delay": 0.1},
-                            {"path_id": wb_path_mux_out, "bits":[1], "duration": 0.1, "start_delay": 0.3},
-                        ])
+                        
+                        # data_to_write_back is guaranteed to be not None here due to the outer if condition
+                        # (i.e., inside 'if data_to_write_back is not None and dest_reg:')
+                        formatted_data = f"0x{data_to_write_back:X}" if isinstance(data_to_write_back, int) else str(data_to_write_back)
+
+                        temp_animations_for_wb = []
+
+                        # Animation for the Mux3 select signal (MemToReg)
+                        # mux3_sel_path is "control-memtoreg-enable", its value is mem_to_reg_ctrl
+                        if mux3_sel_path: # This is "control-memtoreg-enable"
+                             temp_animations_for_wb.append({
+                                 "path_id": mux3_sel_path,
+                                 "bits": [str(mem_to_reg_ctrl)], # Animate the actual select signal value
+                                 "duration": 0.1,
+                                 "start_delay": 0.0 # Show selector first or concurrently
+                             })
+
+                        # Animation for the selected input path feeding into Mux3
+                        if mux3_in_path:
+                            selected_input_value_str = ""
+                            if mem_to_reg_ctrl == 0: # Mux3 selected ALU result
+                                selected_input_value_str = f"0x{alu_result_val:X}"
+                            elif mem_to_reg_ctrl == 1: # Mux3 selected Memory data
+                                if data_read_from_mem is not None:
+                                    selected_input_value_str = f"0x{data_read_from_mem:X}"
+                                else:
+                                    # Fallback if data_read_from_mem is None when MemToReg=1
+                                    selected_input_value_str = "0x0" # Defaulting for visualization
+
+                            if selected_input_value_str: # Ensure a string was set
+                                temp_animations_for_wb.append(
+                                    {"path_id": mux3_in_path, "bits": [selected_input_value_str], "duration": 0.1, "start_delay": 0.05} # After selector
+                                )
+                        
+                        # Animation for the output path of Mux3 (this shows data_to_write_back)
+                        # wb_path_mux_out is the ID of the path coming out of Mux3
+                        temp_animations_for_wb.append(
+                            {"path_id": wb_path_mux_out, "bits": [formatted_data], "duration": 0.2, "start_delay": 0.1} # After input
+                        )
+                        animated_signals_wb.extend(temp_animations_for_wb)
                         
                         try:
                             self.registers.write(dest_reg, data_to_write_back)
@@ -506,10 +544,10 @@ class SimulatorEngine:
                 uncond_branch_signal = control_values.get('UncondBranch', 0)
                 opcode_for_debug = decoded_info.get('opcode', 'N/A')
                 
-                pc_update_log = f"  PC Update Logic Input: Opcode='{opcode_for_debug}', BranchSig={branch_signal}, UncondSig={uncond_branch_signal}, ALUZero={alu_zero_flag}\n"
+                # Calculate PCSrc signal FIRST
                 pc_src_signal = dpc.branch_control_logic(branch_signal, alu_zero_flag, uncond_branch_signal)
-                pc_update_log += f"  PC Update Logic Result: PCSrc = {pc_src_signal}.\n"
 
+                pc_update_log = f"  PC Update Logic Input: Opcode='{opcode_for_debug}', BranchSig={branch_signal}, UncondSig={uncond_branch_signal}, ALUZero={alu_zero_flag}\n"
                 final_next_pc = dpc.pc_source_mux(pc_p4, branch_target_addr_val, pc_src_signal)
                 pc_update_log += f"  PC Source Mux Output: Next PC = 0x{final_next_pc:X}"
                 if pc_src_signal == 1 and branch_target_addr_val != 0:
@@ -519,20 +557,49 @@ class SimulatorEngine:
                 stage_log_wb += pc_update_log
 
                 # ... (Visualization for Mux4)
-                path_mux4_out = "path-mux4-pc" 
+                path_mux4_out = "path-mux4-pc"
                 active_paths_wb.append(path_mux4_out)
                 mux4_in_path_vis, mux4_sel_path_vis = "", ""
-                if pc_src_signal == 1: 
+                selected_input_value_for_mux4_str = ""
+
+                if pc_src_signal == 1:
                     mux4_in_path_vis = "path-adder2-or"
-                    mux4_sel_path_vis = "control-branch-enable" 
-                else: 
+                    mux4_sel_path_vis = "control-branch-enable" # Path visually representing PCSrc=1
+                    selected_input_value_for_mux4_str = f"0x{branch_target_addr_val:X}"
+                else: # pc_src_signal == 0
                     mux4_in_path_vis = "path-adder1-mux4-in0"
-                    mux4_sel_path_vis = "control-uncondbranch-enable"
+                    mux4_sel_path_vis = "control-uncondbranch-enable" # Path visually representing PCSrc=0
+                    selected_input_value_for_mux4_str = f"0x{pc_p4:X}"
+                
                 active_paths_wb.extend([mux4_in_path_vis, mux4_sel_path_vis])
-                animated_signals_wb.extend([
-                    {"path_id": mux4_in_path_vis, "bits":[1], "duration": 0.1 },
-                    {"path_id": path_mux4_out, "bits":[1], "duration": 0.2, "start_delay": 0.1}
-                ])
+                
+                temp_animations_for_mux4 = []
+                # Animate the Mux4 select signal path with the value of PCSrc
+                if mux4_sel_path_vis:
+                    temp_animations_for_mux4.append({
+                        "path_id": mux4_sel_path_vis, 
+                        "bits": [str(pc_src_signal)], 
+                        "duration": 0.1,
+                        "start_delay": 0.0
+                    })
+
+                # Animate the selected input path feeding into Mux4
+                if mux4_in_path_vis and selected_input_value_for_mux4_str:
+                    temp_animations_for_mux4.append({
+                        "path_id": mux4_in_path_vis,
+                        "bits": [selected_input_value_for_mux4_str],
+                        "duration": 0.1,
+                        "start_delay": 0.05 
+                    })
+                
+                # Animate the output path of Mux4
+                temp_animations_for_mux4.append({
+                    "path_id": path_mux4_out,
+                    "bits": [f"0x{final_next_pc:X}"],
+                    "duration": 0.2,
+                    "start_delay": 0.1 
+                })
+                animated_signals_wb.extend(temp_animations_for_mux4)
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_wb, active_blocks_wb, active_paths_wb, animated_signals_wb, control_values).to_dict()
                 return {"next_pc": final_next_pc} # Normal completion
