@@ -298,7 +298,7 @@
     <path id="control-branch-enable" d="M460 232 L420 232 L420 80 L850 80 L850 140" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemRead) - Route straight right then down -->
-    <path id="control-memread-enable" d="M640 244 L1030 244 L1030 425" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memread-enable" d="M510 244 L530 244 L 530 290 L1030 290 L1030 425" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to MemToReg Mux (MemtoReg) - Route down to MUX -->
     <path id="control-memtoreg-enable" d="M460 256 L410 256 L410 730 L1000 730 L1000 630" marker-end="url(#arrowheadBlue)"/>

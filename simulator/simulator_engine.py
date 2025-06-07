@@ -215,7 +215,7 @@ class SimulatorEngine:
             try:
                 control_values = self.control_unit.get_control_signals(opcode)
                 # Add control signal paths for visualization
-                control_paths = ["control-uncondbranch-enable", "control-branch-enable", 'control-memread-enable', 'control-memtoreg-enable', 'control-reg2loc-enable', 'control-aluop-enable', 'control-memwrite-enable', 'control-alusrc-enable', 'control-regwrite-enable']
+                control_paths = ["control-reg2loc-enable","control-uncondbranch-enable", "control-branch-enable", 'control-memread-enable', 'control-memtoreg-enable', 'control-reg2loc-enable', 'control-aluop-enable', 'control-memwrite-enable', 'control-alusrc-enable', 'control-regwrite-enable']
                 active_paths_id.extend(control_paths)
                 
                 # Add control signal animations
@@ -261,19 +261,20 @@ class SimulatorEngine:
                 #print(decoded_info.get('log', "  (No decode log)") + "\n")
                 read_reg1_addr = decoded_info.get('read_reg1_addr')
                 read_reg2_addr = decoded_info.get('read_reg2_addr')
+                read_reg1_addr = decoded_info.get('read_reg1_addr')
+                read_reg2_addr = decoded_info.get('read_reg2_addr')
                 if read_reg1_addr:
                     read_data1 = self.registers.read(read_reg1_addr)
                     stage_log_id += f"  Read Register 1 ({read_reg1_addr}): 0x{read_data1:X}\n"
-                    # ... (update paths/signals for reg read 1)
-                    #active_paths_id.append("path-regs-rdata1")
-                    #animated_signals_id.append({"path_id": "path-regs-rdata1", "bits":[f"0x{read_data1:X}"], "duration": 0.3, "start_delay": 0.2})
+                    # ADDED: Animation for Register 1 read data output
+                    active_paths_id.append("path-regs-rdata1")
+                    animated_signals_id.append({"path_id": "path-regs-rdata1", "bits":[f"0x{read_data1:X}"], "duration": 0.3, "start_delay": 4.5})
                 if read_reg2_addr:
                     read_data2 = self.registers.read(read_reg2_addr)
                     stage_log_id += f"  Read Register 2 ({read_reg2_addr}): 0x{read_data2:X}\n"
-                    # ... (update paths/signals for reg read 2)
-                    #active_paths_id.append("path-regs-rdata2")
-                    #animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 0.2})
-
+                    # ADDED: Animation for Register 2 read data output  
+                    active_paths_id.append("path-regs-rdata2")
+                    animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 4.5})
 
                 imm_val = decoded_info.get('imm_val')
                 if imm_val is not None:
@@ -288,7 +289,30 @@ class SimulatorEngine:
                         #{"path_id": "path-signext-out-mux2", "bits":[f"0x{sign_extended_imm:X}"], "duration": 0.3, "start_delay": 0.3}
                     ])
 
-
+                # ADDED: Animation for ALU Input 2 via Mux2 (determined by ALUSrc)
+                # MODIFIED: Animation for ALU Input 2 via Mux2 (determined by ALUSrc) - Sequential timing
+                # MODIFIED: Animation for ALU Input 2 via Mux2 (determined by ALUSrc) - Sequential timing
+                if "block-mux2" not in active_blocks_id: active_blocks_id.append("block-mux2")
+                alu_src = control_values.get('ALUSrc', 0)
+                alu_input2_val = dpc.alu_input2_mux(read_data2, sign_extended_imm, alu_src)
+                
+                if alu_src == 0:  # Use register data
+                    # Sequential: read_data2 → Mux2 → ALU
+                    # Note: path-regs-rdata2 already animated at start_delay: 0.5
+                    active_paths_id.extend(["path-mux2-alu"])
+                    animated_signals_id.extend([
+                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 8.5}  # CHANGED: 0.6 → 0.8 (after read_data2 at 0.5)
+                    ])
+                    stage_log_id += f"  ALU Input 2 via Mux2 (ALUSrc=0): 0x{alu_input2_val:X} from Register\n"
+                else:  # Use immediate data
+                    # Sequential: sign_extended_imm → Mux2 → ALU
+                    active_paths_id.extend(["path-signext-out-mux2", "path-mux2-alu"])
+                    animated_signals_id.extend([
+                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.3, "start_delay": 4.5},  # CHANGED: 0.5 → 0.4 (after sign extend at ~0.3)
+                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 8.5}       # CHANGED: 0.6 → 0.8 (after signext-out-mux2)
+                    ])
+                    stage_log_id += f"  ALU Input 2 via Mux2 (ALUSrc=1): 0x{alu_input2_val:X} from Immediate\n"
+                
                 branch_offset_val = decoded_info.get('branch_offset_val')
                 if branch_offset_val is not None:
                     branch_offset_bits = decoded_info.get('branch_offset_bits', 0)
@@ -321,24 +345,24 @@ class SimulatorEngine:
                 # ... (logging and visualization for ALU inputs and Mux2)
                 reg1_source_name = decoded_info.get('read_reg1_addr', 'N/A')
                 stage_log_ex += f"  ALU Input 1 (from {reg1_source_name}): 0x{alu_input1_val:X}\n"
-                active_paths_ex.append("path-regs-rdata1")
-                animated_signals_ex.append({"path_id": "path-regs-rdata1", "bits":[f"0x{alu_input1_val:X}"], "duration": 0.2})
+                #active_paths_ex.append("path-regs-rdata1")
+                #animated_signals_ex.append({"path_id": "path-regs-rdata1", "bits":[f"0x{alu_input1_val:X}"], "duration": 0.2})
 
                 if alu_src == 0: 
                     reg2_source_name = decoded_info.get('read_reg2_addr','N/A')
                     stage_log_ex += f"  ALU Input 2 (from {reg2_source_name}): 0x{alu_input2_val:X} (Mux2 Sel=0)\n"
-                    active_paths_ex.extend(["path-regs-rdata2", "path-mux2-alu"])
-                    animated_signals_ex.extend([
-                        {"path_id": "path-regs-rdata2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1},
-                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.1}
-                    ])
+                    # active_paths_ex.extend(["path-regs-rdata2", "path-mux2-alu"])
+                    # animated_signals_ex.extend([
+                    #     {"path_id": "path-regs-rdata2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1},
+                    #     {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.1}
+                    # ])
                 else: 
                     stage_log_ex += f"  ALU Input 2 (from Imm): {alu_input2_val} (0x{alu_input2_val:X}) (Mux2 Sel=1)\n"
-                    active_paths_ex.extend(["path-signext-out-mux2", "path-mux2-alu"])
-                    animated_signals_ex.extend([
-                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1},
-                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.1}
-                    ])
+                    # active_paths_ex.extend(["path-signext-out-mux2", "path-mux2-alu"])
+                    # animated_signals_ex.extend([
+                    #     {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1},
+                    #     {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.1}
+                    # ])
 
 
                 opcode = decoded_info['opcode']
