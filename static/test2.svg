@@ -284,7 +284,7 @@
     <!-- Shift Left 2 to Branch Adder -->
     <path id="path-shift-adder2" stroke="#333" d="M625 345 L690 345 L690 162 L750 162" marker-end="url(#arrowhead)"/>
     <!-- PC+4 to Branch Adder -->
-    <path id="path-pc-adder2" stroke="#333" d="M300 155 L710 155 L710 148 L750 148" marker-end="url(#arrowhead)"/>
+    <path id="path-pc-adder2" stroke="#333" d="M190 475 L190 220 L400 220 L400 148 L710 148 L710 148 L750 148" marker-end="url(#arrowhead)"/>
     <!-- Branch Adder to OR Gate -->
     <path id="path-adder2-or" stroke="#333" d="M800 155 L855 155 L855 154 L900 154" marker-end="url(#arrowhead)"/>
   </g>
@@ -304,7 +304,7 @@
     <path id="control-memtoreg-enable" d="M460 256 L410 256 L410 730 L1000 730 L1000 630" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Reg2Loc Mux (Reg2Loc) - Direct path -->
-    <path id="control-reg2loc-enable" d="M460 268 L475 268 L475 498" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-reg2loc-enable" d="M460 275 L550 275 L550 460" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to ALU Control (ALUOp) - Direct path -->
     <path id="control-aluop-enable" d="M640 220 L840 220 L840 590" marker-end="url(#arrowheadBlue)"/>

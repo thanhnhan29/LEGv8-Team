@@ -174,12 +174,13 @@ class SimulatorEngine:
             
             # ... (active_blocks, active_paths, animated_signals setup for ID)
             active_blocks_id = ["block-control", "block-regs"]
-            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs", "path-instr-regwriteaddr"]
+            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs", "path-instr-regwriteaddr", "path-instr-reg2loc-1"]
             animated_signals_id = [
                 {"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},
                 {"path_id": "path-instr-control", "bits":[f"{opcode}"], "duration": 0.2},
                 {"path_id": "path-instr-regs", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg1_addr')}"], "duration": 0.2},
-                {"path_id": "path-instr-regwriteaddr", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2}
+                {"path_id": "path-instr-regwriteaddr", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2},
+                {"path_id": "path-instr-reg2loc-1", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2}
             ]
             #yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
 
