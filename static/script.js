@@ -599,56 +599,66 @@
       headerDec.style.fontWeight = "bold";
       registerDisplayGrid.append(headerName, headerHex, headerDec);
 
-      Object.entries(state.registers).forEach(([name, valueStr]) => {
-        const nameDiv = document.createElement("div");
-        nameDiv.textContent = name;
-        nameDiv.classList.add("register-name");
-        let hexVal = "N/A";
-        const hexMatch = String(valueStr).match(/^(0x[0-9A-Fa-f]+)/i);
-        if (hexMatch) {
-          hexVal = hexMatch[1];
-        } else if (String(valueStr).match(/^[0-9]+$/)) {
-          try {
-            hexVal = "0x" + BigInt(valueStr).toString(16).toUpperCase();
-          } catch {
+      // Define the desired display order
+      const displayOrder = ["FP", "SP", "LR", "XZR"];
+      for (let i = 0; i < 28; i++) {
+        // X0 through X27
+        displayOrder.push(`X${i}`);
+      }
+
+      displayOrder.forEach((name) => {
+        if (state.registers.hasOwnProperty(name)) {
+          const valueStr = state.registers[name];
+          const nameDiv = document.createElement("div");
+          nameDiv.textContent = name;
+          nameDiv.classList.add("register-name");
+          let hexVal = "N/A";
+          const hexMatch = String(valueStr).match(/^(0x[0-9A-Fa-f]+)/i);
+          if (hexMatch) {
+            hexVal = hexMatch[1];
+          } else if (String(valueStr).match(/^[0-9]+$/)) {
+            try {
+              hexVal = "0x" + BigInt(valueStr).toString(16).toUpperCase();
+            } catch {
+              hexVal = valueStr;
+            }
+          } else {
             hexVal = valueStr;
           }
-        } else {
-          hexVal = valueStr;
-        }
-        const hexDiv = document.createElement("div");
-        hexDiv.textContent = hexVal;
-        hexDiv.classList.add("register-hex");
+          const hexDiv = document.createElement("div");
+          hexDiv.textContent = hexVal;
+          hexDiv.classList.add("register-hex");
 
-        let signedDecVal = "";
-        try {
-          const hexStringForBigInt = hexVal.startsWith("0x")
-            ? hexVal
-            : "0x" + hexVal;
-          if (
-            hexStringForBigInt.toUpperCase() === "0XN/A" ||
-            hexStringForBigInt === "0x"
-          ) {
-            signedDecVal = "N/A";
-          } else {
-            const bigIntValue = BigInt(hexStringForBigInt);
-            if ((bigIntValue & SIGN_BIT_64_MASK) !== 0n) {
-              signedDecVal = (bigIntValue - TWO_POW_64).toString();
+          let signedDecVal = "";
+          try {
+            const hexStringForBigInt = hexVal.startsWith("0x")
+              ? hexVal
+              : "0x" + hexVal;
+            if (
+              hexStringForBigInt.toUpperCase() === "0XN/A" ||
+              hexStringForBigInt === "0x"
+            ) {
+              signedDecVal = "N/A";
             } else {
-              signedDecVal = bigIntValue.toString();
+              const bigIntValue = BigInt(hexStringForBigInt);
+              if ((bigIntValue & SIGN_BIT_64_MASK) !== 0n) {
+                signedDecVal = (bigIntValue - TWO_POW_64).toString();
+              } else {
+                signedDecVal = bigIntValue.toString();
+              }
             }
+          } catch (e) {
+            console.error(
+              `Error converting hex '${hexVal}' to signed decimal for register ${name}:`,
+              e
+            );
+            signedDecVal = "Error";
           }
-        } catch (e) {
-          console.error(
-            `Error converting hex '${hexVal}' to signed decimal for register ${name}:`,
-            e
-          );
-          signedDecVal = "Error";
+          const decDiv = document.createElement("div");
+          decDiv.textContent = signedDecVal;
+          decDiv.classList.add("register-dec");
+          registerDisplayGrid.append(nameDiv, hexDiv, decDiv);
         }
-        const decDiv = document.createElement("div");
-        decDiv.textContent = signedDecVal;
-        decDiv.classList.add("register-dec");
-        registerDisplayGrid.append(nameDiv, hexDiv, decDiv);
       });
     } else if (registerDisplayGrid) {
       registerDisplayGrid.innerHTML = "<div>(No registers data)</div>";

@@ -85,11 +85,36 @@ class SimulatorEngine:
         return len(processed_instr_dict)
 
     def get_cpu_state_for_api(self):
+        # Current state from RegisterFile
+        # We want to ensure all standard registers are present in the output, in a specific order.
+
+        # Define the order of display names
+        special_priority_aliases = ["SP", "FP", "LR"]
+        other_special_regs = ["XZR"]
+        # General purpose registers X0-X27 (X28, X29, X30 are covered by SP, FP, LR)
+        general_numeric_regs = [f"X{i}" for i in range(28)] 
+
+        all_reg_names_for_display = special_priority_aliases + other_special_regs + general_numeric_regs
+
+        complete_regs_display = {}
+        for display_name in all_reg_names_for_display:
+            reg_to_read = display_name
+            if display_name == "FP":
+                reg_to_read = "X29"  # Map FP to X29 for reading
+            elif display_name == "SP":
+                reg_to_read = "X28"  # Map SP to X28 for reading
+            elif display_name == "LR":
+                reg_to_read = "X30"  # Map LR to X30 for reading
+            
+            # For X0-X27 and XZR, display_name is the same as reg_to_read
+            # self.registers.read() should handle these canonical names.
+            value = self.registers.read(reg_to_read) 
+            complete_regs_display[display_name] = f"0x{value:X}"
+
         return {
             "pc": f"0x{self.pc:X}",
-            "registers": self.registers.get_display_dict(),
+            "registers": complete_regs_display, # Use the new ordered dictionary
             "data_memory": self.data_memory.get_display_dict(),
-            # NEW: Include binary instruction at current PC if available
             "current_binary": self._get_current_binary_instruction(),
         }
 
