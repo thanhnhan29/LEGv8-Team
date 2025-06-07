@@ -32,7 +32,7 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        overflow: hidden;
+        /* overflow: hidden; */
         gap: 10px;
       }
       .panel {
@@ -244,11 +244,15 @@
       /* --- Center Column --- */
       #center-column {
         flex: 1 1 auto;
+        flex-direction: row; /* MODIFIED: Children will be in a row */
+        /* Inherits display:flex, height:100%, gap:10px from .column */
       }
       #datapath-panel {
-        flex-grow: 1;
+        /* flex-grow: 1; (original) */
+        flex: 1 1 auto; /* MODIFIED: Let it grow and shrink */
         min-height: 0;
-        overflow: hidden; /* Added overflow */
+        overflow: hidden;
+        min-width: 0; /* ADDED: Allow it to shrink properly */
       }
       #datapath-area {
         height: 100%;
@@ -301,7 +305,6 @@
         /* display: flex; flex-direction: column; height: 100%; gap: 10px; Đã có trong .column */
       }
 
-      #tabs-panel-top,
       #tabs-panel-bottom {
         /* display: flex; flex-direction: column; Đã có trong .panel */
         flex-grow: 1;
@@ -314,7 +317,9 @@
       .tabs-container {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        /* height: 100%; */ /* <-- Xóa hoặc ghi chú dòng này */
+        flex-grow: 1; /* <-- Thêm dòng này */
+        min-height: 0; /* <-- Thêm dòng này để đảm bảo co giãn đúng trong flex */
         width: 100%;
         overflow: hidden; /*Không cần thiết lắm nếu .tab-content có overflow */
       }
@@ -447,6 +452,26 @@
           transform: translateX(-150%);
         }
       }
+
+      /* ADDED: Style for the moved tabs-panel-top in its new location */
+      #tabs-panel-top {
+        position: fixed;
+        bottom: 50px; /* Positioned above the banner */
+        right: 20px;
+        width: 350px;
+        height: 400px; /* Adjust as needed, or use max-height */
+        z-index: 1010; /* Higher than the banner */
+        min-height: 0; /* Still useful for internal flex consistency */
+        overflow: hidden; /* Keep this to manage internal content */
+        /* It's a .panel, so it inherits background, padding, border-radius, box-shadow, display:flex, flex-direction:column */
+        /* Flex properties like flex-grow, flex-shrink, flex-basis are removed as it's out of normal flow */
+        box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.5); /* Added for depth effect */
+      }
+      #tabs-panel-top h2 {
+        /* ADDED: Style for the drag handle */
+        cursor: move;
+        user-select: none; /* Prevent text selection when dragging title */
+      }
     </style>
   </head>
   <body>
@@ -504,7 +529,24 @@
       <div id="center-column" class="column">
         <div id="datapath-panel" class="panel">
           <div id="datapath-area">
-            <h2>CPU LEGv8</h2>
+            <h2>
+              <span>CPU LEGv8</span>
+              <button
+                id="toggle-cpu-state-button"
+                title="Toggle CPU State Panel"
+                style="
+                  font-size: 0.8em;
+                  padding: 3px 8px;
+                  background-color: #6c757d;
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                "
+              >
+                Show CPU State
+              </button>
+            </h2>
             <object
               id="datapath-svg-object"
               data="{{ url_for('static', filename='test2.svg') }}"
@@ -512,31 +554,24 @@
             >
               SVG Overlay not loaded.
             </object>
-            </div>
           </div>
         </div>
-      </div>
-      <!-- End Center Column -->
-
-      <!-- Right Column: Divided Status Tabs -->
-      <div id="right-column" class="column">
-        <!-- ==== TOP TAB PANEL ==== -->
+        <!-- MOVED CPU STATE PANEL HERE -->
         <div id="tabs-panel-top" class="panel">
           <h2>CPU State</h2>
           <div id="status-tabs-top" class="tabs-container">
             <div class="tab-buttons">
-              <!-- Add data-panel attribute -->
-              <button
-                class="tab-button active"
-                data-tab="registers"
-                data-panel="top"
-              >
+              <button class="tab-button" data-tab="registers" data-panel="top">
                 Registers
               </button>
               <button class="tab-button" data-tab="memory" data-panel="top">
                 Memory
               </button>
-              <button class="tab-button" data-tab="cpu-state" data-panel="top">
+              <button
+                class="tab-button active"
+                data-tab="cpu-state"
+                data-panel="top"
+              >
                 CPU State
               </button>
               <button
@@ -547,14 +582,13 @@
                 Control
               </button>
             </div>
-            <!-- Content for TOP tabs (IDs remain the same) -->
-            <div id="tab-registers" class="tab-content active">
+            <div id="tab-registers" class="tab-content">
               <div class="register-grid" id="register-display-grid">
                 <div>(Load program...)</div>
               </div>
             </div>
             <div id="tab-memory" class="tab-content">(Load program...)</div>
-            <div id="tab-cpu-state" class="tab-content">
+            <div id="tab-cpu-state" class="tab-content active">
               <div class="cpu-state-info">
                 <strong>PC:</strong> <span id="pc-value-display">N/A</span>
               </div>
@@ -566,32 +600,12 @@
             </div>
           </div>
         </div>
-        <!-- ==== END TOP TAB PANEL ==== -->
-
-        <!-- ==== BOTTOM TAB PANEL ==== -->
-        <div id="tabs-panel-bottom" class="panel">
-          <h2>Execution Log</h2>
-          <div id="status-tabs-bottom" class="tabs-container">
-            <div class="tab-buttons">
-              <!-- Add data-panel attribute -->
-              <button
-                class="tab-button active"
-                data-tab="log"
-                data-panel="bottom"
-              >
-                Log
-              </button>
-              <!-- Add more buttons here if needed for the bottom panel later -->
-            </div>
-            <!-- Content for BOTTOM tabs (IDs remain the same) -->
-            <div id="tab-log" class="tab-content active">
-              (Execution log...)
-            </div>
-            <!-- Add more content divs here if needed -->
-          </div>
-        </div>
-        <!-- ==== END BOTTOM TAB PANEL ==== -->
+        <!-- END MOVED CPU STATE PANEL -->
       </div>
+      <!-- This closes #center-column -->
+      <!-- End Center Column -->
+
+      <!-- Right Column: Divided Status Tabs -->
       <!-- End Right Column -->
     </div>
     <!-- End main-container -->
@@ -608,5 +622,90 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+      // Make the #tabs-panel-top draggable
+      const draggablePanel = document.getElementById("tabs-panel-top");
+      const dragHandle = draggablePanel.querySelector("h2");
+
+      let offsetX, offsetY, initialPanelLeft, initialPanelTop;
+
+      if (dragHandle) {
+        dragHandle.addEventListener("mousedown", dragMouseDown);
+      }
+
+      function dragMouseDown(e) {
+        e.preventDefault(); // Prevent text selection
+
+        // Calculate initial offset of mouse cursor from panel's top-left
+        const panelRect = draggablePanel.getBoundingClientRect();
+        initialPanelLeft = panelRect.left;
+        initialPanelTop = panelRect.top;
+
+        offsetX = e.clientX - initialPanelLeft;
+        offsetY = e.clientY - initialPanelTop;
+
+        // Ensure the panel is positioned with left/top for dragging
+        draggablePanel.style.left = initialPanelLeft + "px";
+        draggablePanel.style.top = initialPanelTop + "px";
+        draggablePanel.style.right = "auto"; // Clear right/bottom positioning
+        draggablePanel.style.bottom = "auto";
+
+        document.addEventListener("mousemove", elementDrag);
+        document.addEventListener("mouseup", closeDragElement);
+      }
+
+      function elementDrag(e) {
+        e.preventDefault();
+
+        // Calculate new panel position
+        let newLeft = e.clientX - offsetX;
+        let newTop = e.clientY - offsetY;
+
+        // Constrain to viewport
+        const panelWidth = draggablePanel.offsetWidth;
+        const panelHeight = draggablePanel.offsetHeight;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        if (newLeft < 0) newLeft = 0;
+        if (newTop < 0) newTop = 0;
+        if (newLeft + panelWidth > viewportWidth)
+          newLeft = viewportWidth - panelWidth;
+        if (newTop + panelHeight > viewportHeight)
+          newTop = viewportHeight - panelHeight;
+
+        draggablePanel.style.left = newLeft + "px";
+        draggablePanel.style.top = newTop + "px";
+      }
+
+      function closeDragElement() {
+        document.removeEventListener("mouseup", closeDragElement);
+        document.removeEventListener("mousemove", elementDrag);
+      }
+
+      // Toggle CPU State Panel Visibility
+      const toggleCpuStateButton = document.getElementById(
+        "toggle-cpu-state-button"
+      );
+      const cpuStatePanel = document.getElementById("tabs-panel-top");
+
+      if (toggleCpuStateButton && cpuStatePanel) {
+        // Initially hide the panel with !important and set button text
+        cpuStatePanel.style.setProperty("display", "none", "important");
+        toggleCpuStateButton.textContent = "Show CPU State";
+
+        toggleCpuStateButton.addEventListener("click", () => {
+          const computedStyle = window.getComputedStyle(cpuStatePanel);
+          if (computedStyle.display === "none") {
+            cpuStatePanel.style.setProperty("display", "flex", "important"); // Panels are display: flex
+            toggleCpuStateButton.textContent = "Hide CPU State";
+          } else {
+            cpuStatePanel.style.setProperty("display", "none", "important");
+            toggleCpuStateButton.textContent = "Show CPU State";
+          }
+        });
+      }
+    </script>
   </body>
 </html>

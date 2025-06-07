@@ -17,15 +17,27 @@
     // Check children
     const topPanel = document.getElementById("tabs-panel-top");
     const bottomPanel = document.getElementById("tabs-panel-bottom");
+    const toggleButtonForTopPanel = document.getElementById(
+      "toggle-cpu-state-button"
+    ); // Check for the toggle button
 
     if (topPanel) {
-      topPanel.setAttribute(
-        "style",
-        "display: flex !important; flex: 1 !important; flex-direction: column !important; min-height: 200px !important; border: 1px solid blue !important;"
-      );
-      console.log("Top panel found and styled");
+      if (!toggleButtonForTopPanel) {
+        // Only apply these styles if the toggle button doesn't exist
+        topPanel.setAttribute(
+          "style",
+          "display: flex !important; flex: 1 !important; flex-direction: column !important; min-height: 200px !important; border: 1px solid blue !important;"
+        );
+        console.log(
+          "Top panel styled by forceRightPanelVisible (as part of right column legacy)"
+        );
+      } else {
+        console.log(
+          "Top panel's visibility is controlled by toggle-cpu-state-button, forceRightPanelVisible skipping display style."
+        );
+      }
     } else {
-      console.error("Top panel missing!");
+      console.error("Top panel missing in forceRightPanelVisible!");
     }
 
     if (bottomPanel) {
@@ -60,7 +72,9 @@
     flex-direction: column !important;
   }
   
-  #tabs-panel-top, #tabs-panel-bottom {
+  /* MODIFIED SELECTOR: Only apply to #tabs-panel-top when it's a direct child of #right-column */
+  #right-column > #tabs-panel-top, 
+  #right-column > #tabs-panel-bottom {
     display: flex !important;
     flex: 1 !important;
     flex-direction: column !important;
@@ -1034,7 +1048,10 @@
     textGroup.setAttribute("data-path-id", pathId);
 
     // Create background rectangle
-    const backgroundRect = svgDoc.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const backgroundRect = svgDoc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect"
+    );
     backgroundRect.classList.add("signal-text-background");
     backgroundRect.setAttribute("fill", "rgba(255, 255, 255, 0.9)");
     backgroundRect.setAttribute("stroke", "#333333");
@@ -2457,15 +2474,28 @@
     // Force display of panels
     const topPanel = document.getElementById("tabs-panel-top");
     const bottomPanel = document.getElementById("tabs-panel-bottom");
+    const toggleButtonForTopPanelExists = document.getElementById(
+      "toggle-cpu-state-button"
+    ); // Check again
 
     if (topPanel) {
-      Object.assign(topPanel.style, {
-        display: "flex",
-        flex: "1",
-        flexDirection: "column",
-        minHeight: "0",
-        overflow: "auto",
-      });
+      if (!toggleButtonForTopPanelExists) {
+        // Only apply these styles if the toggle button doesn't exist
+        Object.assign(topPanel.style, {
+          display: "flex",
+          flex: "1",
+          flexDirection: "column",
+          minHeight: "0",
+          overflow: "auto",
+        });
+        console.log(
+          "Top panel styled by setTimeout (as part of right column legacy)"
+        );
+      } else {
+        console.log(
+          "Top panel's visibility is controlled by toggle-cpu-state-button, setTimeout skipping display style."
+        );
+      }
     }
 
     if (bottomPanel) {
