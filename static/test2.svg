@@ -195,22 +195,22 @@
 
   <!-- AND Gate (for Branch condition) -->
   <g id="block-and-gate">
-    <rect x="830" y="140" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
-    <text x="850" y="158" text-anchor="middle" font-family="Arial" font-size="10" fill="#33691E">&amp;</text>
+    <rect x="840" y="180" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
+    <text x="860" y="198" text-anchor="middle" font-family="Arial" font-size="10" fill="#33691E" font-weight="bold">AND</text>
   </g>
 
   <!-- OR Gate (for PC Mux select) -->
   <g id="block-or-gate">
-    <rect x="900" y="140" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
-    <text x="920" y="158" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#33691E">≥1</text>
+    <rect x="920" y="180" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
+    <text x="940" y="198" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#33691E">OR</text>
   </g>
   
   <!-- PC Source Mux -->
   <g id="block-mux4">
-    <rect x="980" y="140" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
-    <text x="1000" y="158" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
-    <text x="1025" y="148" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
-    <text x="1025" y="165" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
+    <rect x="980" y="120" width="40" height="45" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="1000" y="145" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20" font-weight="bold">Mux</text>
+    <text x="1025" y="140" font-family="Arial" font-size="7" fill="#2E7D32" font-weight="bold">0</text>
+    <text x="1025" y="155" font-family="Arial" font-size="7" fill="#2E7D32" font-weight="bold">1</text>
   </g>
 
   <!-- Labels for Instruction Fields -->
@@ -229,8 +229,8 @@
     <path id="path-pc-imem" stroke="#333" d="M230 500 L280 500" marker-end="url(#arrowhead)"/>
     <path id="path-pc-adder1" stroke="#333" d="M190 475 L190 175 L240 175" marker-end="url(#arrowhead)"/>
     <path id="path-4-adder" stroke="#333" d="M220 155 L240 155" marker-end="url(#arrowhead)"/>
-    <path id="path-adder1-mux4-in0" stroke="#333" d="M310 155 L370 155 L370 130 L980 130 L980 150" marker-end="url(#arrowhead)"/>
-    <path id="path-mux4-pc" stroke="#333" d="M1020 150 L1050 150 L1050 115 L135 115 L135 500 L155 500" marker-end="url(#arrowhead)"/>
+    <path id="path-adder1-mux4-in0" stroke="#333" d="M310 155 L370 155 L370 130 L980 130" marker-end="url(#arrowhead)"/>
+    <path id="path-mux4-pc" stroke="#333" d="M1020 145 L1050 145 L1050 115 L135 115 L135 500 L155 500" marker-end="url(#arrowhead)"/>
 
     <!-- Instruction Memory Outputs (from common junction point) -->
     <path id="path-imem-out" stroke="#333" d="M400 500 L430 500" marker-end="url(#arrowhead)"/>
@@ -273,7 +273,7 @@
     <!-- ALU Result to MUX -->
     <path id="path-alu-mux3" stroke="#333" d="M900 485 L940 485 L940 640 L950 640 L955 640" marker-end="url(#arrowhead)"/>
     <!-- ALU Zero flag to AND gate -->
-    <path id="path-alu-zero" stroke="#333" d="M820 435 L820 150 L830 150" marker-end="url(#arrowhead)"/>
+    <path id="path-alu-zero" stroke="#333" d="M820 435 L820 195 L840 195" marker-end="url(#arrowhead)"/>
 
     <!-- Data Memory Read Data to MemToReg Mux -->
     <path id="path-mem-readdata" stroke="#333" d="M1120 475 L1150 475 L1150 640 L995 640" marker-end="url(#arrowhead)"/>
@@ -288,16 +288,16 @@
     <!-- PC+4 to Branch Adder -->
     <path id="path-pc-adder2" stroke="#333" d="M190 475 L190 220 L400 220 L400 148 L710 148 L710 148 L750 148" marker-end="url(#arrowhead)"/>
     <!-- Branch Adder to OR Gate -->
-    <path id="path-adder2-or" stroke="#333" d="M800 155 L855 155 L855 154 L900 154" marker-end="url(#arrowhead)"/>
+    <path id="path-adder2-or" stroke="#333" d="M800 155 L855 155 L975 155" marker-end="url(#arrowhead)"/>
   </g>
 
   <!-- Control Lines (with proper IDs for simulation highlighting) -->
   <g id="control-lines" stroke="#1976D2" stroke-width="2" fill="none" stroke-dasharray="5,3">
     <!-- Control Unit to OR gate (Uncondbranch) - Direct path -->
-    <path id="control-uncondbranch-enable" d="M460 220 L440 220 L440 75 L920 75 L920 140" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-uncondbranch-enable" d="M460 220 L440 220 L440 75 L940 75 L940 180" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to AND gate (Branch) - Direct path -->
-    <path id="control-branch-enable" d="M460 232 L420 232 L420 80 L850 80 L850 140" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-branch-enable" d="M460 232 L420 232 L420 95 L860 95 L860 175" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemRead) - Route straight right then down -->
     <path id="control-memread-enable" d="M510 244 L530 244 L 530 290 L1030 290 L1030 425" marker-end="url(#arrowheadBlue)"/>
@@ -322,7 +322,7 @@
     <path id="control-regwrite-enable" d="M640 256 L650 256 L650 415" marker-end="url(#arrowheadBlue)"/>
 
     <!-- Logic gate connections -->
-    <path id="path-and-or" d="M870 155 L885 155 L885 155 L900 155" marker-end="url(#arrowheadBlue)"/>
-    <path id="path-or-mux4" d="M940 155 L965 155 L965 155 L980 155" marker-end="url(#arrowheadBlue)"/>
+    <path id="path-and-or" d="M880 195 L915 195" marker-end="url(#arrowheadBlue)"/>
+    <path id="path-or-mux4" d="M960 195 L1000 195 L1000 165" marker-end="url(#arrowheadBlue)"/>
   </g>
 </svg>

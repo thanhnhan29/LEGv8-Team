@@ -998,7 +998,7 @@
     };
 
     return (
-      patterns[instructionType]?.[stage] || {
+      {
         active_blocks: [],
         active_paths: [],
         control_signals: [],
