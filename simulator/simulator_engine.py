@@ -306,11 +306,12 @@ class SimulatorEngine:
                 # ADDED: Animation for ALU Input 2 via Mux2 (determined by ALUSrc)
                 # MODIFIED: Animation for ALU Input 2 via Mux2 (determined by ALUSrc) - Sequential timing
                 # MODIFIED: Animation for ALU Input 2 via Mux2 (determined by ALUSrc) - Sequential timing
-                if "block-mux2" not in active_blocks_id: active_blocks_id.append("block-mux2")
+                if "block-mux2" not in active_blocks_id and control_values.get('ALUOp', 0) != "01" and control_values.get('ALUOp', 0) != "XX": 
+                    active_blocks_id.append("block-mux2")
                 alu_src = control_values.get('ALUSrc', 0)
                 alu_input2_val = dpc.alu_input2_mux(read_data2, sign_extended_imm, alu_src)
                 
-                if alu_src == 0:  # Use register data
+                if alu_src == 0 and control_values.get('ALUOp', 0) != "01" and control_values.get('ALUOp', 0) != "XX":  # Use register data
                     # Sequential: read_data2 → Mux2 → ALU
                     # Note: path-regs-rdata2 already animated at start_delay: 0.5
                     active_paths_id.extend(["path-mux2-alu"])
@@ -318,7 +319,7 @@ class SimulatorEngine:
                         {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 8.5}  # CHANGED: 0.6 → 0.8 (after read_data2 at 0.5)
                     ])
                     stage_log_id += f"  ALU Input 2 via Mux2 (ALUSrc=0): 0x{alu_input2_val:X} from Register\n"
-                else:  # Use immediate data
+                elif control_values.get('ALUOp', 0) != "01" and control_values.get('ALUOp', 0) != "XX":  # Use immediate data
                     # Sequential: sign_extended_imm → Mux2 → ALU
                     active_paths_id.extend(["path-signext-out-mux2", "path-mux2-alu"])
                     animated_signals_id.extend([
@@ -348,7 +349,7 @@ class SimulatorEngine:
             current_micro_step_index_yield = 2
             stage_log_ex = f"[{current_stage_name}]\n"
             # ... (active_blocks, active_paths, animated_signals setup for EX)
-            active_blocks_ex = ["block-alu", "block-alucontrol", "block-mux2"]
+            active_blocks_ex = ["block-alu", "block-alucontrol"]
             active_paths_ex = []
             animated_signals_ex = []
             try:
