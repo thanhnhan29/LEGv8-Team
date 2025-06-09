@@ -37,6 +37,9 @@ def writeback_data_mux(alu_result_data, mem_read_data, mem_to_reg_signal):
 def pc_source_mux(pc_plus_4_val, branch_target_addr, pc_src_signal):
     return branch_target_addr if pc_src_signal == 1 else pc_plus_4_val
 
+def mux1(bit_20_16, bit_4_0, reg2loc):
+    return bit_20_16 if reg2loc == 0 else bit_4_0
+
 # --- Logic Điều Khiển Nhánh ---
 def branch_control_logic(branch_signal, zero_flag, uncond_branch_signal):
     pc_src = (branch_signal & zero_flag) | uncond_branch_signal

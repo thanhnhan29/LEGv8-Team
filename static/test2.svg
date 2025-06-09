@@ -125,8 +125,8 @@
 
   <!-- Mux (Write Register Destination) - Reg2Loc -->
   <g id="block-mux1">
-    <rect x="530" y="460" width="40" height="35" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
-    <text x="550" y="480" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <rect x="530" y="460" width="30" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
+    <text x="545" y="480" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
     <!-- <text x="575" y="490" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
     <text x="575" y="510" font-family="Arial" font-size="7" fill="#2E7D32">1</text> -->
   </g>
@@ -215,12 +215,12 @@
 
   <!-- Labels for Instruction Fields -->
   <g id="instruction-field-labels" font-family="Arial" font-size="9" fill="#795548">
-    <text x="420" y="200">Instruction [31-21]</text> <!-- To Control -->
-    <text x="440" y="420">Instruction [9-5]</text> <!-- To Read Reg 1 -->
-    <text x="445" y="475">Instruction [20-16]</text> <!-- To Reg2Loc Mux -->
-    <text x="445" y="495">Instruction [4-0]</text> <!-- To Write Reg -->
-    <text x="375" y="648">Instruction [31-0]</text> <!-- To Sign Extend -->
-    <text x="445" y="593">Instruction [31-21]</text> <!-- To ALU Control -->
+    <text x="435" y="340">Instruction [31-21]</text> <!-- To Control -->
+    <text x="435" y="420">Instruction [9-5]</text> <!-- To Read Reg 1 -->
+    <text x="435" y="475">Instruction [20-16]</text> <!-- To Reg2Loc Mux -->
+    <text x="435" y="520">Instruction [4-0]</text> <!-- To Write Reg -->
+    <text x="435" y="650">Instruction [31-0]</text> <!-- To Sign Extend -->
+    <text x="435" y="610">Instruction [31-21]</text> <!-- To ALU Control -->
   </g>
   
   <!-- Data Paths -->
@@ -239,9 +239,9 @@
     <!-- To Register File Read reg 1 [9-5] -->
     <path id="path-instr-regs" stroke="#333" d="M430 500 L430 430 L580 430" marker-end="url(#arrowhead)"/>
     <!-- To Reg2Loc Mux input 0 [20-16] -->
-    <path id="path-instr-reg2loc-0" stroke="#333" d="M430 500 L430 485 L530 485" marker-end="url(#arrowhead)"/>
+    <path id="path-instr-reg2loc-0" stroke="#333" d="M430 500 L430 465 L530 465" marker-end="url(#arrowhead)"/>
     <!-- To Reg2Loc Mux input 1 [4-0] for stores -->
-    <path id="path-instr-reg2loc-1" stroke="#333" d="M430 500 L430 505 L520 505 L520 495 L530 495" marker-end="url(#arrowhead)"/>
+    <path id="path-instr-reg2loc-1" stroke="#333" d="M430 500 L430 505 L500 505 L500 485 L530 485" marker-end="url(#arrowhead)"/>
     <!-- To Write Register (direct from [4-0]) -->
     <path id="path-instr-regwriteaddr" stroke="#333" d="M430 500 L430 505 L580 505" marker-end="url(#arrowhead)"/>
     <!-- To Sign Extend [31-0] -->
@@ -252,7 +252,7 @@
     <path id="path-instr-alucontrol" stroke="#333" d="M430 500 L430 615 L795 615" marker-end="url(#arrowhead)"/>
 
     <!-- Reg2Loc Mux output to Read reg 2 -->
-    <path id="path-reg2loc-out" stroke="#333" d="M570 470 L580 470" marker-end="url(#arrowhead)"/>
+    <path id="path-reg2loc-out" stroke="#333" d="M560 470 L580 470" marker-end="url(#arrowhead)"/>
 
     <!-- Register File Outputs -->
     <path id="path-regs-rdata1" stroke="#333" d="M700 430 L780 430 L780 455" marker-end="url(#arrowhead)"/>
