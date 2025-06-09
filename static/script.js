@@ -519,6 +519,12 @@
   let currentInstructionAddr = -1;
   let currentInstructionStr = "N/A";
   let animationSpeed = 0.3;
+
+  // NEW: Text animation tracking for cleanup
+  let currentInstructionTextElements = new Set(); // Track text elements of current instruction
+  let allPersistentTextElements = new Set(); // Track all text elements globally
+  let lastInstructionAddr = null; // Track when instruction changes
+
   const knownControlSignals = [
     "RegWrite",
     "ALUSrc",
@@ -997,14 +1003,12 @@
       },
     };
 
-    return (
-      {
-        active_blocks: [],
-        active_paths: [],
-        control_signals: [],
-        description: `${instructionType} ${stage} (pattern not defined)`,
-      }
-    );
+    return {
+      active_blocks: [],
+      active_paths: [],
+      control_signals: [],
+      description: `${instructionType} ${stage} (pattern not defined)`,
+    };
   }
 
   // Animation error tracking
@@ -1056,6 +1060,14 @@
     const textGroup = svgDoc.createElementNS("http://www.w3.org/2000/svg", "g");
     textGroup.classList.add("signal-text-group");
     textGroup.setAttribute("data-path-id", pathId);
+
+    // NEW: Add instruction tracking - use actual currentInstructionAddr
+    textGroup.setAttribute("data-instruction-addr", currentInstructionAddr);
+    textGroup.setAttribute("data-created-step", currentMicroStepIndex);
+
+    // Add to tracking sets
+    currentInstructionTextElements.add(textGroup);
+    allPersistentTextElements.add(textGroup);
 
     // Create background rectangle
     const backgroundRect = svgDoc.createElementNS(
@@ -1109,6 +1121,60 @@
     }, 10);
 
     return textGroup;
+  }
+
+  // NEW: Text cleanup functions for instruction completion
+  function clearInstructionTextAnimations() {
+    /* Clear text elements for current instruction when instruction completes */
+    if (!svgDoc) {
+      console.warn("clearInstructionTextAnimations: No SVG document available");
+      return;
+    }
+
+    try {
+      let removedCount = 0;
+      currentInstructionTextElements.forEach((textElement) => {
+        if (textElement && textElement.parentNode) {
+          textElement.remove();
+          removedCount++;
+          // Also remove from global tracking
+          allPersistentTextElements.delete(textElement);
+        }
+      });
+
+      // Clear the current instruction set
+      currentInstructionTextElements.clear();
+
+      console.log(
+        `🧹 Cleared ${removedCount} text elements for completed instruction`
+      );
+    } catch (err) {
+      console.error("Error clearing instruction text animations:", err);
+    }
+  }
+
+  function clearAllTextAnimations() {
+    /* Clear all text elements - used for reset/new program */
+    if (!svgDoc) {
+      console.warn("clearAllTextAnimations: No SVG document available");
+      return;
+    }
+
+    try {
+      // Clear using class selector for thoroughness
+      const allTextGroups = svgDoc.querySelectorAll(".signal-text-group");
+      allTextGroups.forEach((text) => text.remove());
+
+      // Clear tracking sets
+      currentInstructionTextElements.clear();
+      allPersistentTextElements.clear();
+
+      console.log(
+        `🧹 Cleared all ${allTextGroups.length} text elements (full reset)`
+      );
+    } catch (err) {
+      console.error("Error clearing all text animations:", err);
+    }
   }
 
   function animateSignalText(pathElement, signal, svgDoc) {
@@ -1751,7 +1817,7 @@
   }
 
   async function handleSingleMicroStep() {
-    /* Unchanged */
+    /* Enhanced with text animation cleanup on instruction completion */
 
     if (!simulationLoaded) return "error";
     if (!svgDoc) {
@@ -1768,6 +1834,9 @@
         console.error("Error accessing SVG document during step:", e);
       }
     }
+
+    // NEW: Track previous instruction address to detect completion
+    const previousInstructionAddr = currentInstructionAddr;
     let stepStatus = "error";
     try {
       const response = await fetch("/api/micro_step", { method: "POST" });
@@ -1808,6 +1877,13 @@
           data.status === "finished_instruction"
         ) {
           updateLog(data.message || "Instruction completed.");
+
+          // NEW: Clear text animations for completed instruction
+          console.log(
+            `🧹 Instruction completed at addr ${previousInstructionAddr}, clearing text animations`
+          );
+          clearInstructionTextAnimations();
+
           currentMicroStepIndex = -1;
 
           const nextPC = parseAddress(data.cpu_state?.pc);
@@ -1832,6 +1908,10 @@
           stepStatus = "instruction_completed";
         } else if (data.status === "finished_program") {
           updateLog(data.message || "Program finished.");
+
+          // NEW: Clear all text animations when program finishes
+          console.log("🧹 Program finished, clearing all text animations");
+          clearAllTextAnimations();
 
           setSimulationState(false, false, data.message || "End of program");
           highlightLine(-1);
@@ -2112,19 +2192,56 @@
     });
   }
 
-  function clearPersistentTextAnimations() {
-    /* Clear all persistent text elements - used only for reset/new program */
+  // NEW: Text cleanup functions for instruction completion
+  function clearInstructionTextAnimations() {
+    /* Clear text elements for current instruction when instruction completes */
     if (!svgDoc) {
-      console.warn("clearPersistentTextAnimations: No SVG document available");
+      console.warn("clearInstructionTextAnimations: No SVG document available");
       return;
     }
 
     try {
-      const persistentTexts = svgDoc.querySelectorAll(".signal-text-group");
-      persistentTexts.forEach((text) => text.remove());
-      console.log(`Cleared ${persistentTexts.length} persistent text elements`);
+      let removedCount = 0;
+      currentInstructionTextElements.forEach((textElement) => {
+        if (textElement && textElement.parentNode) {
+          textElement.remove();
+          removedCount++;
+          allPersistentTextElements.delete(textElement); // Also remove from global tracking
+        }
+      });
+
+      // Clear the current instruction set
+      currentInstructionTextElements.clear();
+
+      console.log(
+        `🧹 Cleared ${removedCount} text elements for completed instruction`
+      );
     } catch (err) {
-      console.error("Error clearing persistent text animations:", err);
+      console.error("Error clearing instruction text animations:", err);
+    }
+  }
+
+  function clearAllTextAnimations() {
+    /* Clear all text elements - used for reset/new program */
+    if (!svgDoc) {
+      console.warn("clearAllTextAnimations: No SVG document available");
+      return;
+    }
+
+    try {
+      // Clear using class selector for thoroughness
+      const allTextGroups = svgDoc.querySelectorAll(".signal-text-group");
+      allTextGroups.forEach((text) => text.remove());
+
+      // Clear tracking sets
+      currentInstructionTextElements.clear();
+      allPersistentTextElements.clear();
+
+      console.log(
+        `🧹 Cleared all ${allTextGroups.length} text elements (full reset)`
+      );
+    } catch (err) {
+      console.error("Error clearing all text animations:", err);
     }
   }
 
@@ -2205,7 +2322,7 @@
     const code = codeEditor.value;
     updateStatus("Loading and Resetting...");
     clearLog();
-    clearPersistentTextAnimations(); // Clear text before loading new program
+    clearAllTextAnimations(); // Clear text before loading new program
     resetAllSvgStyles();
     highlightLine(-1);
     populateCodeDisplay(code);
@@ -2307,7 +2424,7 @@
     stopAutoRun();
     updateStatus("Resetting simulation...");
     clearLog();
-    clearPersistentTextAnimations(); // Clear text before reset
+    clearAllTextAnimations(); // Clear text before reset
     resetAllSvgStyles();
     highlightLine(-1);
     codeEditor.style.display = "block";
