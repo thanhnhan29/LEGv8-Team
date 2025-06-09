@@ -1,0 +1,83 @@
+﻿/* Memory and Register Grid Styles */
+.register-grid,
+.memory-grid {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 5px;
+  font-family: "Fira Code", "Consolas", monospace;
+  font-size: 12px;
+  padding: 10px 0;
+}
+
+.register-grid > div,
+.memory-grid > div {
+  padding: 3px 0;
+  border-bottom: 1px solid transparent;
+}
+
+/* Header styles for both grids */
+.register-grid > div:nth-child(-n + 3),
+.memory-grid > div:nth-child(-n + 3) {
+  font-weight: bold;
+  color: #2196f3 !important; /* Darker blue for headers - better contrast */
+  border-bottom: 1px solid #404040;
+  padding-bottom: 5px;
+  margin-bottom: 3px;
+}
+
+/* Register specific styling with better contrast */
+.register-name {
+  color: #000000 !important; /* Black color */
+  font-weight: 500;
+}
+
+.register-hex {
+  color: #2e7d32 !important; /* Darker green - better contrast */
+  font-family: "Fira Code", "Consolas", monospace;
+}
+
+.register-dec {
+  color: #424242 !important; /* Darker gray - better contrast */
+}
+
+/* Memory specific styling with better contrast */
+.memory-grid .address-cell {
+  color: #f57f17 !important; /* Darker yellow - better contrast */
+  font-weight: 500;
+}
+
+.memory-grid .hex-cell {
+  color: #2e7d32 !important; /* Darker green - better contrast */
+  font-family: "Fira Code", "Consolas", monospace;
+}
+
+.memory-grid .decimal-cell {
+  color: #424242 !important; /* Darker gray - better contrast */
+}
+
+/* Control signals styling with better contrast */
+.control-signal-name {
+  color: #333333 !important; /* Dark gray for better readability */
+  font-weight: 700;
+}
+
+.control-signal-value {
+  font-weight: bold;
+  padding: 0 5px;
+  border-radius: 3px;
+}
+
+.control-signal-value.active {
+  color: #2e7d32 !important; /* Darker green for active */
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.control-signal-value.inactive {
+  color: #c2185b !important; /* Darker pink for inactive */
+  background-color: rgba(244, 143, 177, 0.1);
+}
+
+.control-signal-value.other {
+  color: #1976d2 !important; /* Darker blue for other values */
+  background-color: rgba(129, 199, 132, 0.1);
+}

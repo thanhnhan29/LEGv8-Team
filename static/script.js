@@ -110,9 +110,154 @@
 `;
   document.head.appendChild(emergencyStyles);
 
+  // Add Highlight.js CSS and configure syntax highlighting
+  const highlightJsLink = document.createElement("link");
+  highlightJsLink.rel = "stylesheet";
+  highlightJsLink.href =
+    "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css";
+  document.head.appendChild(highlightJsLink);
+
+  // Add Highlight.js JavaScript
+  const highlightJsScript = document.createElement("script");
+  highlightJsScript.src =
+    "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+  highlightJsScript.onload = () => {
+    // Configure custom LEGv8 Assembly language
+    hljs.registerLanguage("legv8", function (hljs) {
+      return {
+        case_insensitive: true,
+        keywords: {
+          keyword:
+            "ADD SUB AND ORR EOR LSL LSR ASR ADDI SUBI ANDI ORRI EORI LDUR STUR CBZ CBNZ B BEQ BNE BLT BLE BGT BGE BR MUL DIV MOVZ MOVK NOP",
+          built_in:
+            "X0 X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14 X15 X16 X17 X18 X19 X20 X21 X22 X23 X24 X25 X26 X27 X28 FP LR SP XZR",
+        },
+        contains: [
+          hljs.COMMENT("//", "$"),
+          hljs.COMMENT("/\\*", "\\*/"),
+          {
+            className: "string",
+            begin: '"',
+            end: '"',
+          },
+          {
+            className: "number",
+            variants: [
+              { begin: "#-?\\d+" }, // Immediate values
+              { begin: "\\b0x[0-9A-Fa-f]+\\b" }, // Hex numbers
+              { begin: "\\b\\d+\\b" }, // Decimal numbers
+            ],
+          },
+          {
+            className: "symbol",
+            begin: "^[a-zA-Z_][a-zA-Z0-9_]*:", // Labels
+            end: "$",
+          },
+          {
+            className: "meta",
+            begin: "\\.[a-zA-Z]+", // Directives like .data, .text
+          },
+        ],
+      };
+    });
+
+    console.log("Highlight.js loaded and LEGv8 language registered");
+  };
+  document.head.appendChild(highlightJsScript);
+
   // Add CSS for better path highlighting
   const highlightStyles = document.createElement("style");
   highlightStyles.textContent = `
+    /* Code editor styling with Highlight.js integration - Dark Theme */
+    #code-editor {
+      font-family: 'Fira Code', 'Consolas', 'Monaco', monospace !important;
+      background-color: #1e1e1e !important;
+      color: #d4d4d4 !important;
+      border: 1px solid #404040 !important;
+      border-radius: 4px !important;
+      padding: 10px !important;
+    }
+    
+    #code-display {
+      font-family: 'Fira Code', 'Consolas', 'Monaco', monospace !important;
+      background-color: #1e1e1e !important;
+      color: #d4d4d4 !important;
+      border: 1px solid #404040 !important;
+      border-radius: 4px !important;
+      line-height: 1.4 !important;
+      padding: 10px !important;
+    }
+    
+    /* Remove old label highlighting */
+    .code-line.is-label {
+      color: inherit !important;
+      font-weight: inherit !important;
+    }
+    
+    /* VS Code Dark Theme colors for LEGv8 Assembly */
+    .hljs {
+      background: #1e1e1e !important;
+      color: #d4d4d4 !important;
+    }
+    
+    .hljs-keyword {
+      color: #569cd6 !important; /* Instructions - Light Blue (VS Code keyword) */
+      font-weight: bold !important;
+    }
+    
+    .hljs-built_in {
+      color: #4ec9b0 !important; /* Registers - Teal/Cyan (VS Code built-in) */
+      font-weight: 500 !important;
+    }
+    
+    .hljs-number {
+      color: #b5cea8 !important; /* Numbers and immediates - Light Green */
+    }
+    
+    .hljs-symbol {
+      color: #dcdcaa !important; /* Labels - Yellow (VS Code function color) */
+      font-weight: bold !important;
+    }
+    
+    .hljs-comment {
+      color: #6a9955 !important; /* Comments - Green (VS Code comment) */
+      font-style: italic !important;
+    }
+    
+    .hljs-meta {
+      color: #c586c0 !important; /* Directives - Purple (VS Code preprocessor) */
+    }
+    
+    .hljs-string {
+      color: #ce9178 !important; /* Strings - Orange (VS Code string) */
+    }
+    
+    /* Line highlighting for current instruction */
+    .code-line.highlighted {
+      background-color: #094771 !important; /* Dark blue highlight */
+      border-left: 3px solid #007acc !important; /* VS Code blue accent */
+      padding-left: 7px !important;
+      margin-left: -10px !important;
+    }
+    
+    /* Code line styling */
+    .code-line {
+      display: block !important;
+      padding: 2px 0 !important;
+      margin: 0 !important;
+      white-space: pre !important;
+    }
+    
+    .code-line.is-comment {
+      opacity: 0.8 !important;
+    }
+    
+    .code-line.is-label {
+      border-left: 2px solid #dcdcaa !important;
+      padding-left: 5px !important;
+      margin-left: -7px !important;
+    }
+
     /* Path highlighting styles */
     .path-highlight {
       z-index: 1000 !important;
@@ -350,14 +495,12 @@
     const tabIds = [
       "registers",
       "memory",
-      "cpu-state",
       "control-signals",
       "log",
     ];
     const topPanelTabs = [
       "registers",
       "memory",
-      "cpu-state",
       "control-signals",
     ];
     const bottomPanelTabs = ["log"];
@@ -672,53 +815,119 @@
 
     // --- Memory Tab ---
     if (state.data_memory && memoryTabContent) {
-      let memHtml = "";
+      // Clear previous content and create grid structure
+      memoryTabContent.innerHTML = "";
+
+      // Create memory display grid
+      const memoryDisplayGrid = document.createElement("div");
+      memoryDisplayGrid.className = "memory-grid";
+      memoryDisplayGrid.style.display = "grid";
+      memoryDisplayGrid.style.gridTemplateColumns = "auto 1fr 1fr";
+      memoryDisplayGrid.style.gap = "5px";
+      memoryDisplayGrid.style.fontFamily = "'Fira Code', 'Consolas', monospace";
+      memoryDisplayGrid.style.fontSize = "12px";
+
       const memEntries = Object.entries(state.data_memory);
       if (memEntries.length === 0) {
-        memHtml = "(Memory Empty)";
+        memoryTabContent.innerHTML = "<div>(Memory Empty)</div>";
       } else {
+        // Create headers
+        const headerAddr = document.createElement("div");
+        headerAddr.textContent = "Address";
+        headerAddr.style.fontWeight = "bold";
+        headerAddr.style.color = "#569cd6";
+        headerAddr.style.borderBottom = "1px solid #404040";
+        headerAddr.style.paddingBottom = "5px";
+
+        const headerHex = document.createElement("div");
+        headerHex.textContent = "Hex Value";
+        headerHex.style.fontWeight = "bold";
+        headerHex.style.color = "#569cd6";
+        headerHex.style.borderBottom = "1px solid #404040";
+        headerHex.style.paddingBottom = "5px";
+
+        const headerDec = document.createElement("div");
+        headerDec.textContent = "Decimal (Signed)";
+        headerDec.style.fontWeight = "bold";
+        headerDec.style.color = "#569cd6";
+        headerDec.style.borderBottom = "5px";
+        headerDec.style.borderBottom = "1px solid #404040";
+        headerDec.style.paddingBottom = "5px";
+
+        memoryDisplayGrid.append(headerAddr, headerHex, headerDec);
+
+        // Sort memory entries by address
         memEntries.sort((a, b) => parseAddress(a[0]) - parseAddress(b[0]));
+
         memEntries.forEach(([addrStr, valStr]) => {
           const addrNum = parseAddress(addrStr);
           const addrHex = isNaN(addrNum)
             ? addrStr
             : `0x${addrNum.toString(16).toUpperCase()}`;
-          let displayMemContent = valStr;
+
+          // Address column
+          const addrDiv = document.createElement("div");
+          addrDiv.textContent = addrHex;
+          addrDiv.style.color = "#000000";
+          addrDiv.style.fontWeight = "500";
+          addrDiv.style.padding = "3px 0";
+
+          // Hex value column
+          let hexVal = "N/A";
+          let signedDecVal = "N/A";
+
           const memHexMatch = String(valStr).match(/^(0x[0-9A-Fa-f]+)/i);
           if (memHexMatch) {
-            const memHexVal = memHexMatch[1];
+            hexVal = memHexMatch[1];
             try {
-              const memBigIntValue = BigInt(memHexVal);
-              let memSignedDecVal;
+              const memBigIntValue = BigInt(hexVal);
               if ((memBigIntValue & SIGN_BIT_64_MASK) !== 0n) {
-                memSignedDecVal = (memBigIntValue - TWO_POW_64).toString();
+                signedDecVal = (memBigIntValue - TWO_POW_64).toString();
               } else {
-                memSignedDecVal = memBigIntValue.toString();
+                signedDecVal = memBigIntValue.toString();
               }
-              displayMemContent = `${memHexVal} (${memSignedDecVal})`;
             } catch (e) {
               console.warn(
-                `Error converting memory hex '${memHexVal}' to signed decimal:`,
+                `Error converting memory hex '${hexVal}' to signed decimal:`,
                 e
               );
-              displayMemContent = memHexVal + " (Error)";
+              signedDecVal = "Error";
             }
+          } else if (String(valStr).match(/^[0-9]+$/)) {
+            try {
+              hexVal = "0x" + BigInt(valStr).toString(16).toUpperCase();
+              signedDecVal = valStr;
+            } catch {
+              hexVal = valStr;
+              signedDecVal = valStr;
+            }
+          } else {
+            hexVal = valStr;
+            signedDecVal = valStr;
           }
-          memHtml += `Mem[${addrHex.padEnd(18)}]: ${displayMemContent}\n`;
+
+          const hexDiv = document.createElement("div");
+          hexDiv.textContent = hexVal;
+          hexDiv.style.color = "#2e7d32";
+          hexDiv.style.fontFamily = "'Fira Code', 'Consolas', monospace";
+          hexDiv.style.padding = "3px 0";
+
+          // Decimal value column
+          const decDiv = document.createElement("div");
+          decDiv.textContent = signedDecVal;
+          decDiv.style.color = "#000000";
+          decDiv.style.padding = "3px 0";
+
+          memoryDisplayGrid.append(addrDiv, hexDiv, decDiv);
         });
+
+        memoryTabContent.appendChild(memoryDisplayGrid);
       }
-      memoryTabContent.textContent = memHtml;
     } else if (memoryTabContent) {
-      memoryTabContent.textContent = "(No memory data)";
+      memoryTabContent.innerHTML = "<div>(No memory data)</div>";
     }
 
     // --- CPU State Tab (PC) ---
-    if (pcValueDisplay) {
-      const pcAddr = parseAddress(state.pc);
-      pcValueDisplay.textContent = isNaN(pcAddr)
-        ? state.pc || "N/A"
-        : `0x${pcAddr.toString(16).toUpperCase()}`;
-    }
   }
 
   function initializeControlSignalsDisplay() {
@@ -1684,25 +1893,58 @@
   }
 
   function populateCodeDisplay(code) {
-    /* Unchanged */
+    /* Enhanced with Highlight.js syntax highlighting */
     if (!codeDisplay) return;
     codeDisplay.innerHTML = "";
     highlightedLineElement = null;
-    const lines = code.split("\n");
+
+    // Apply syntax highlighting first
+    let highlightedCode;
+    try {
+      // Check if hljs is available and LEGv8 language is registered
+      if (typeof hljs !== "undefined" && hljs.getLanguage("legv8")) {
+        highlightedCode = hljs.highlight(code, { language: "legv8" }).value;
+      } else {
+        // Fallback to plain text if hljs not ready
+        console.warn("Highlight.js not ready, using plain text");
+        highlightedCode = code
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+    } catch (e) {
+      console.warn("Syntax highlighting failed, using plain text:", e);
+      highlightedCode = code
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    const lines = highlightedCode.split("\n");
     let currentAddr = 0;
     let lineAddrMap = {};
 
-    lines.forEach((lineText, index) => {
+    lines.forEach((lineHtml, index) => {
       const span = document.createElement("span");
       span.classList.add("code-line");
-      span.textContent = lineText.length > 0 ? lineText : "\u00A0";
-      span.dataset.lineNumber = index;
-      const trimmedLine = lineText.trim();
-      const isComment = trimmedLine.startsWith("//");
-      const isLabel = /^[a-zA-Z_][a-zA-Z0-9_]*:$/.test(trimmedLine);
-      const isEmpty = trimmedLine === "";
-      const isDirective = trimmedLine.startsWith(".");
 
+      // Use innerHTML for highlighted content, but handle empty lines
+      if (lineHtml.trim().length > 0) {
+        span.innerHTML = lineHtml;
+      } else {
+        span.innerHTML = "&nbsp;"; // Non-breaking space for empty lines
+      }
+
+      span.dataset.lineNumber = index;
+
+      // Extract plain text for analysis (strip HTML tags)
+      const plainText = lineHtml.replace(/<[^>]*>/g, "").trim();
+      const isComment = plainText.startsWith("//");
+      const isLabel = /^[a-zA-Z_][a-zA-Z0-9_]*:$/.test(plainText);
+      const isEmpty = plainText === "";
+      const isDirective = plainText.startsWith(".");
+
+      // Add classes for styling (but don't override Highlight.js colors)
       if (isComment) {
         span.classList.add("is-comment");
       } else if (isLabel) {
@@ -1712,11 +1954,16 @@
         lineAddrMap[currentAddr] = index;
         currentAddr += 4;
       }
+
       codeDisplay.appendChild(span);
     });
+
     codeEditor.style.display = "none";
     codeDisplay.style.display = "block";
-    console.log("Code display populated. Frontend address map:", lineAddrMap);
+    console.log(
+      "Code display populated with syntax highlighting. Frontend address map:",
+      lineAddrMap
+    );
   }
 
   function highlightLine(addr) {

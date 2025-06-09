@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LEGv8 Datapath Visualizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
       /* --- Global Styles --- */
       html,
@@ -568,13 +569,6 @@
                 Memory
               </button>
               <button
-                class="tab-button active"
-                data-tab="cpu-state"
-                data-panel="top"
-              >
-                CPU State
-              </button>
-              <button
                 class="tab-button"
                 data-tab="control-signals"
                 data-panel="top"
@@ -588,11 +582,6 @@
               </div>
             </div>
             <div id="tab-memory" class="tab-content">(Load program...)</div>
-            <div id="tab-cpu-state" class="tab-content active">
-              <div class="cpu-state-info">
-                <strong>PC:</strong> <span id="pc-value-display">N/A</span>
-              </div>
-            </div>
             <div id="tab-control-signals" class="tab-content">
               <div class="control-signals-list" id="control-signals-display">
                 <div>(Signals appear during execution...)</div>
