@@ -71,4 +71,4 @@ class RegisterFile:
 
     def set_all_registers(self, regs_dict):
         """Sets internal registers from a given dictionary (used for state restoration)."""
-        self.registers = regs_dict.copy() # Ensure XZR and SP are handled correctly if not present
+        self.registers = regs_dict.copy()

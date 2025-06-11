@@ -96,11 +96,11 @@ def execute_alu_op(decoded_info, alu_op_map, alu_input1, alu_input2):
             'alu_result': alu_result, 'alu_zero_flag': alu_zero_flag}
 
 def execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    alu_op_map = {'ADD': 'add', 'SUB': 'sub', 'AND': 'and', 'ORR': 'orr', 'MUL': 'mul', 'DIV': 'div', 'LSL': 'lsl', 'LSR':'lsr'}
+    alu_op_map = {'ADD': 'add', 'SUB': 'sub', 'AND': 'and', 'ORR': 'orr', 'MUL': 'mul', 'DIV': 'div', 'LSL': 'lsl', 'LSR':'lsr', 'EOR': 'eor'}
     return execute_alu_op(decoded_info, alu_op_map, read_data1, read_data2)
 
 def execute_i_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    alu_op_map = {'ADDI': 'add', 'SUBI': 'sub'}
+    alu_op_map = {'ADDI': 'add', 'SUBI': 'sub', 'ANDI': 'and', 'ORRI': 'orr', 'EORI': 'eor'}
     return execute_alu_op(decoded_info, alu_op_map, read_data1, sign_ext_imm)
 
 def execute_d_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
@@ -210,14 +210,21 @@ INSTRUCTION_HANDLERS = {
     'SUB':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'AND':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'ORR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
-    'MUL':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
-    'DIV':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'EOR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    #'MUL':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    #'DIV':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'LSL':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'LSR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    
     'ADDI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'SUBI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'ANDI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'ORRI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'EORI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    
     'LDUR': {'decode': decode_d_format_load, 'execute': execute_d_type,   'memory': memory_read,   'writeback': writeback_mem_data},
     'STUR': {'decode': decode_d_format_store,'execute': execute_d_type,   'memory': memory_write,  'writeback': writeback_noop},
+    
     'CBZ':  {'decode': decode_cb_format,     'execute': execute_cb_type,  'memory': memory_noop,   'writeback': writeback_noop},
     'B':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
     # 'NOP':  {'decode': decode_nop,           'execute': execute_nop,      'memory': memory_noop,   'writeback': writeback_noop},

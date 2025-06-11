@@ -2354,8 +2354,9 @@
     setSimulationState(simulationLoaded, true);
 
     // Slower intervals for better visualization
-    const microStepInterval = showAnimationsToggle.checked ? 1200 : 400; // Slower for micro-steps
-    const instructionInterval = showAnimationsToggle.checked ? 800 : 200; // Pause between instructions
+    const animationDelayMs = (animationSpeed * 1000) + 1000; // Convert to ms and add 1s buffer
+    const microStepInterval = showAnimationsToggle.checked ? animationDelayMs : 400; // Use animation speed if enabled
+    const instructionInterval = showAnimationsToggle.checked ? Math.max(800, animationDelayMs * 0.5) : 200; // Half delay between instructions
 
     console.log(
       `Starting auto-run with micro-step interval: ${microStepInterval}ms`

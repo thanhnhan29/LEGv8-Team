@@ -279,14 +279,14 @@ class SimulatorEngine:
                     stage_log_id += f"  Read Register 1 ({read_reg1_addr}): 0x{read_data1:X}\n"
                     # ADDED: Animation for Register 1 read data output
                     active_paths_id.append("path-regs-rdata1")
-                    animated_signals_id.append({"path_id": "path-regs-rdata1", "bits":[f"0x{read_data1:X}"], "duration": 0.3, "start_delay": 4.5})
+                    animated_signals_id.append({"path_id": "path-regs-rdata1", "bits":[f"0x{read_data1:X}"], "duration": 0.3, "start_delay": 0.15})
                 if read_reg2_addr:
                     read_data2 = self.registers.read(read_reg2_addr)
                     stage_log_id += f"  Read Register 2 ({read_reg2_addr}): 0x{read_data2:X}\n"
                     # ADDED: Animation for Register 2 read data output  
                     if(self.control_unit.get_control_signals(opcode).get('ALUSrc', 0) == 0):
                         active_paths_id.append("path-regs-rdata2")
-                        animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 4.5})
+                        animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 0.25})
                 if decoded_info.get('shamt') is not None:
                     shamt_bit = int(decoded_info.get('shamt_bit'))
                     shamt = int(decoded_info.get('shamt'))
@@ -324,15 +324,15 @@ class SimulatorEngine:
                     # Note: path-regs-rdata2 already animated at start_delay: 0.5
                     active_paths_id.extend(["path-mux2-alu"])
                     animated_signals_id.extend([
-                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 8.5}  # CHANGED: 0.6 → 0.8 (after read_data2 at 0.5)
+                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.3}  # CHANGED: 0.6 → 0.8 (after read_data2 at 0.5)
                     ])
                     stage_log_id += f"  ALU Input 2 via Mux2 (ALUSrc=0): 0x{alu_input2_val:X} from Register\n"
                 elif control_values.get('ALUOp', 0) != "01" and control_values.get('ALUOp', 0) != "XX":  # Use immediate data
                     # Sequential: sign_extended_imm → Mux2 → ALU
                     active_paths_id.extend(["path-signext-out-mux2", "path-mux2-alu"])
                     animated_signals_id.extend([
-                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.3, "start_delay": 4.5},  # CHANGED: 0.5 → 0.4 (after sign extend at ~0.3)
-                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 8.5}       # CHANGED: 0.6 → 0.8 (after signext-out-mux2)
+                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.3, "start_delay": 0.5},  # CHANGED: 0.5 → 0.4 (after sign extend at ~0.3)
+                        {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.2}       # CHANGED: 0.6 → 0.8 (after signext-out-mux2)
                     ])
                     stage_log_id += f"  ALU Input 2 via Mux2 (ALUSrc=1): 0x{alu_input2_val:X} from Immediate\n"
                 
@@ -610,7 +610,9 @@ class SimulatorEngine:
 
                 # ... (Visualization for Mux4)
                 path_mux4_out = "path-mux4-pc"
-                active_paths_wb.append(path_mux4_out)
+                active_paths_wb.append("path-and-or")
+                active_paths_wb.append("path-or-mux4")
+                active_paths_wb.append("path-mux4-pc")
                 mux4_in_path_vis, mux4_sel_path_vis = "", ""
                 selected_input_value_for_mux4_str = ""
 

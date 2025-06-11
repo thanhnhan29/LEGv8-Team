@@ -54,7 +54,59 @@ class ControlUnit:
             'Reg2Loc': 1
         }
     },
+    'EOR': {
+        'control': {
+            'RegWrite': 1,
+            'ALUSrc': 0,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 0,
+            'UncondBranch': 0,
+            'ALUOp': '10',
+            'Reg2Loc': 1
+        }
+    },
     'ADDI': {
+        'control': {
+            'RegWrite': 1,
+            'ALUSrc': 1,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 0,
+            'UncondBranch': 0,
+            'ALUOp': '00',
+            'Reg2Loc': 0
+        }
+    },
+    'ANDI': {
+        'control': {
+            'RegWrite': 1,
+            'ALUSrc': 1,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 0,
+            'UncondBranch': 0,
+            'ALUOp': '00',
+            'Reg2Loc': 0
+        }
+    },
+    'ORRI': {
+        'control': {
+            'RegWrite': 1,
+            'ALUSrc': 1,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 0,
+            'UncondBranch': 0,
+            'ALUOp': '00',
+            'Reg2Loc': 0
+        }
+    },
+    'EORI': {
         'control': {
             'RegWrite': 1,
             'ALUSrc': 1,
