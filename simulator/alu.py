@@ -9,12 +9,15 @@ class ALU:
         elif operation == 'sub': result = op1_int - op2_int
         elif operation == 'and': result = op1_int & op2_int
         elif operation == 'orr': result = op1_int | op2_int
-        elif operation == 'pass1': result = op1_int # Used for CBZ to check zero flag of operand1
+        elif operation == 'pass1': result = op1_int 
         elif operation == 'mul': result = op1_int * op2_int
         elif operation == 'div':
             if op2_int == 0:
                 raise ValueError("ALU Error: Division by zero.")
             result = int(op1_int / op2_int)
+
+        elif operation == 'lsl': result = op1_int<<operand2
+        elif operation == 'lsr': result = op1_int>>operand2
         else: raise ValueError(f"ALU Error: Operation '{operation}' not supported.")
 
         result_64 = result & 0xFFFFFFFFFFFFFFFF

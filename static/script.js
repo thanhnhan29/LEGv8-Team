@@ -398,6 +398,31 @@
     "show-animations-toggle"
   );
   const svgObject = document.getElementById("datapath-svg-object");
+  const uploadFileButton = document.getElementById("upload-file-button");
+  const fileInput = document.getElementById("file-input");
+  const datapathContainer = document.getElementById("datapath-container");
+
+  // Zoom controls
+  const zoomInButton = document.getElementById("zoom-in-button");
+  const zoomOutButton = document.getElementById("zoom-out-button");
+  const zoomResetButton = document.getElementById("zoom-reset-button");
+  const zoomLevelDisplay = document.getElementById("zoom-level-display");
+
+  // Animation speed control
+  const animationSpeedSlider = document.getElementById(
+    "animation-speed-slider"
+  );
+  const speedDisplay = document.getElementById("speed-display");
+
+  // --- Zoom State ---
+  let zoomLevel = 1.0;
+  let minZoom = 0.25;
+  let maxZoom = 3.0;
+  let zoomStep = 0.25;
+  let isPanning = false;
+  let lastPanX = 0;
+  let lastPanY = 0;
+
   if (!svgObject) {
     console.error("SVG object reference not found! Check the ID in HTML.");
   } else if (!svgObject.getAttribute("data")) {
@@ -405,12 +430,98 @@
   } else {
     console.log("SVG source path:", svgObject.getAttribute("data"));
   }
-  const uploadFileButton = document.getElementById("upload-file-button");
-  const fileInput = document.getElementById("file-input");
-
   // Now you can safely log these
   console.log("SVG object reference:", svgObject);
   console.log("SVG source:", svgObject?.getAttribute("data"));
+
+  // --- Zoom Functions ---
+  function updateZoomLevel() {
+    if (zoomLevelDisplay) {
+      zoomLevelDisplay.textContent = Math.round(zoomLevel * 100) + "%";
+    }
+    if (svgObject) {
+      svgObject.style.transform = `scale(${zoomLevel})`;
+    }
+  }
+
+  function zoomIn() {
+    if (zoomLevel < maxZoom) {
+      zoomLevel = Math.min(maxZoom, zoomLevel + zoomStep);
+      updateZoomLevel();
+    }
+  }
+
+  function zoomOut() {
+    if (zoomLevel > minZoom) {
+      zoomLevel = Math.max(minZoom, zoomLevel - zoomStep);
+      updateZoomLevel();
+    }
+  }
+
+  function resetZoom() {
+    zoomLevel = 1.0;
+    updateZoomLevel();
+    // Reset any pan position
+    if (datapathContainer) {
+      datapathContainer.scrollLeft = 0;
+      datapathContainer.scrollTop = 0;
+    }
+  }
+
+  // Mouse wheel zoom functionality
+  function handleWheelZoom(event) {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+
+      const zoomFactor = 0.1;
+      const rect = datapathContainer.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      if (event.deltaY < 0) {
+        // Zoom in
+        if (zoomLevel < maxZoom) {
+          zoomLevel = Math.min(maxZoom, zoomLevel + zoomFactor);
+          updateZoomLevel();
+        }
+      } else {
+        // Zoom out
+        if (zoomLevel > minZoom) {
+          zoomLevel = Math.max(minZoom, zoomLevel - zoomFactor);
+          updateZoomLevel();
+        }
+      }
+    }
+  }
+
+  // Pan functionality for when zoomed in
+  function handlePanStart(event) {
+    if (zoomLevel > 1.0) {
+      isPanning = true;
+      lastPanX = event.clientX;
+      lastPanY = event.clientY;
+      datapathContainer.style.cursor = "grabbing";
+    }
+  }
+
+  function handlePanMove(event) {
+    if (isPanning && zoomLevel > 1.0) {
+      const deltaX = event.clientX - lastPanX;
+      const deltaY = event.clientY - lastPanY;
+
+      datapathContainer.scrollLeft -= deltaX;
+      datapathContainer.scrollTop -= deltaY;
+
+      lastPanX = event.clientX;
+      lastPanY = event.clientY;
+    }
+  }
+
+  function handlePanEnd() {
+    isPanning = false;
+    datapathContainer.style.cursor = zoomLevel > 1.0 ? "grab" : "default";
+  }
+
   // Add SVG status indicator
   const svgStatus = document.createElement("div");
   svgStatus.id = "svg-status";
@@ -492,17 +603,8 @@
   // Add this function to ensure all tab content divs exist
   function ensureTabContentExists() {
     // Check if tab content divs exist and create them if missing
-    const tabIds = [
-      "registers",
-      "memory",
-      "control-signals",
-      "log",
-    ];
-    const topPanelTabs = [
-      "registers",
-      "memory",
-      "control-signals",
-    ];
+    const tabIds = ["registers", "memory", "control-signals", "log"];
+    const topPanelTabs = ["registers", "memory", "control-signals"];
     const bottomPanelTabs = ["log"];
 
     const topPanel = document.getElementById("tabs-panel-top");
@@ -661,7 +763,7 @@
   let currentMicroStepIndex = -1;
   let currentInstructionAddr = -1;
   let currentInstructionStr = "N/A";
-  let animationSpeed = 0.3;
+  let animationSpeed = 5.0; // Default animation speed in seconds (5s)
 
   // NEW: Text animation tracking for cleanup
   let currentInstructionTextElements = new Set(); // Track text elements of current instruction
@@ -926,8 +1028,6 @@
     } else if (memoryTabContent) {
       memoryTabContent.innerHTML = "<div>(No memory data)</div>";
     }
-
-    // --- CPU State Tab (PC) ---
   }
 
   function initializeControlSignalsDisplay() {
@@ -1460,8 +1560,8 @@
 
     animationText = signal.bits;
 
-    // Slower, more cinematic animation speed
-    const duration = 5 || 2.0; // Increased duration for slower movement
+    // Use dynamic animation speed from slider (2s to 5s)
+    const duration = animationSpeed; // Use global animationSpeed variable
     const startDelay = signal.start_delay || 0;
 
     // Create text element
@@ -2706,6 +2806,47 @@
       setSimulationState(false, false, errorMsg);
     }
   });
+
+  // --- Zoom Control Event Listeners ---
+  if (zoomInButton) {
+    zoomInButton.addEventListener("click", zoomIn);
+  }
+
+  if (zoomOutButton) {
+    zoomOutButton.addEventListener("click", zoomOut);
+  }
+
+  if (zoomResetButton) {
+    zoomResetButton.addEventListener("click", resetZoom);
+  }
+
+  // Mouse wheel zoom (Ctrl + scroll wheel)
+  if (datapathContainer) {
+    datapathContainer.addEventListener("wheel", handleWheelZoom);
+
+    // Pan functionality when zoomed in
+    datapathContainer.addEventListener("mousedown", handlePanStart);
+    document.addEventListener("mousemove", handlePanMove);
+    document.addEventListener("mouseup", handlePanEnd);
+  }
+
+  // Initialize zoom level display
+  updateZoomLevel();
+
+  // --- Animation Speed Control ---
+  if (animationSpeedSlider && speedDisplay) {
+    // Initialize speed display
+    speedDisplay.textContent = animationSpeedSlider.value + "s";
+    animationSpeed = parseFloat(animationSpeedSlider.value);
+
+    // Handle speed slider changes
+    animationSpeedSlider.addEventListener("input", (event) => {
+      const newSpeed = parseFloat(event.target.value);
+      animationSpeed = newSpeed;
+      speedDisplay.textContent = newSpeed.toFixed(1) + "s";
+      console.log(`Animation speed changed to: ${animationSpeed}s`);
+    });
+  }
 
   // --- MODIFIED Tab Switching Logic ---
   // Select ALL tab buttons from both panels

@@ -1,9 +1,7 @@
-﻿# -*- coding: utf-8 -*-
-from .alu import ALU # Use . for relative import within package
+﻿
+from .alu import ALU
 from .datapath_components import sign_extend, branch_target_adder
-# Note: read_register, write_register, read_memory, write_memory will be called
-# on RegisterFile and Memory objects passed into the main simulator engine,
-# not directly imported here.
+
 
 # --- Decode Handlers ---
 def decode_nop(parts):
@@ -12,7 +10,16 @@ def decode_nop(parts):
 def decode_r_format(parts):
     if len(parts) < 4: raise ValueError("Decode Error: Invalid R-format instruction syntax")
     rd, rn, rm = parts[1], parts[2], parts[3]
-    return {'log': f"  Decode: R-format (Rd={rd}, Rn={rn}, Rm={rm})",
+    if rm[0] == '#':
+        rm = rm.lstrip('#')
+        try:
+            rm = int(rm)
+        except ValueError:
+            raise ValueError(f"Decode Error: Invalid immediate value for I-format: '{rm}'")
+        return {'log': f"  Decode: R-format (Rd={rd}, Rn={rn}, shamt = {rm}[12b])",
+            'rd': rd, 'rn': rn, 'shamt': rm, 'shamt_bit': 12,
+            'read_reg1_addr': rn}
+    return {'log': f"  Decode: R-format (Rd={rd}, Rn={rn}, Rm={rm}, shamt = {rm})",
             'rd': rd, 'rn': rn, 'rm': rm,
             'read_reg1_addr': rn, 'read_reg2_addr': rm}
 
@@ -89,7 +96,7 @@ def execute_alu_op(decoded_info, alu_op_map, alu_input1, alu_input2):
             'alu_result': alu_result, 'alu_zero_flag': alu_zero_flag}
 
 def execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    alu_op_map = {'ADD': 'add', 'SUB': 'sub', 'AND': 'and', 'ORR': 'orr', 'MUL': 'mul', 'DIV': 'div'}
+    alu_op_map = {'ADD': 'add', 'SUB': 'sub', 'AND': 'and', 'ORR': 'orr', 'MUL': 'mul', 'DIV': 'div', 'LSL': 'lsl', 'LSR':'lsr'}
     return execute_alu_op(decoded_info, alu_op_map, read_data1, read_data2)
 
 def execute_i_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
@@ -203,8 +210,10 @@ INSTRUCTION_HANDLERS = {
     'SUB':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'AND':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'ORR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
-    # 'MUL':  {'decode': decode_r_format,      'execute': execute_mul,      'memory': memory_noop,   'writeback': writeback_alu_result},
-    # 'DIV':  {'decode': decode_r_format,      'execute': execute_div,      'memory': memory_noop,   'writeback': writeback_alu_result},
+    'MUL':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'DIV':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'LSL':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'LSR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'ADDI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'SUBI': {'decode': decode_i_format,      'execute': execute_i_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'LDUR': {'decode': decode_d_format_load, 'execute': execute_d_type,   'memory': memory_read,   'writeback': writeback_mem_data},

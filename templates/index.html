@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LEGv8 Datapath Visualizer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
     <style>
       /* --- Global Styles --- */
       html,
@@ -242,6 +245,49 @@
         transform: translateX(26px);
       }
 
+      /* Speed control styles */
+      .speed-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .speed-slider {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: #ddd;
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      .speed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #2196f3;
+        cursor: pointer;
+      }
+
+      .speed-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #2196f3;
+        cursor: pointer;
+        border: none;
+      }
+
+      #speed-display {
+        font-size: 0.9em;
+        color: #666;
+        font-weight: 500;
+        min-width: 40px;
+        text-align: right;
+      }
+
       /* --- Center Column --- */
       #center-column {
         flex: 1 1 auto;
@@ -266,20 +312,90 @@
         width: 100%;
         border: 1px solid #ccc;
         border-radius: 4px;
-        overflow: hidden;
+        overflow: auto; /* Allow scrolling when zoomed */
         background-color: #ffffff;
         display: flex;
-        align-items: center;
-        justify-content: center;
+        align-items: flex-start; /* Changed from center to flex-start */
+        justify-content: flex-start; /* Changed from center to flex_start */
         min-height: 0;
+        cursor: grab; /* Indicate draggable when zoomed */
+        /* Add padding to allow scroll in all directions when zoomed */
+        padding: 0;
       }
+      #datapath-container:active {
+        cursor: grabbing;
+      }
+
+      /* Wrapper to handle zoom scroll properly */
+      #datapath-svg-wrapper {
+        display: inline-block;
+        min-width: 100%;
+        min-height: 100%;
+        position: relative;
+      }
+
       #datapath-svg-object {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
+        max-width: none;
+        max-height: none;
+        width: 100%;
+        height: 100%;
+        object-fit: none; /* Changed from contain to none */
         display: block;
         position: relative;
         z-index: 1;
+        transition: none; /* Remove transition for immediate sizing */
+        transform-origin: top left; /* Zoom from top-left corner */
+        flex-shrink: 0; /* Prevent flex shrinking when zoomed */
+      }
+
+      /* Zoom controls */
+      .zoom-controls {
+        position: fixed;
+        top: 80px;
+        right: 40px;
+        z-index: 1020; /* Higher than CPU state panel */
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .zoom-button {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ccc;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 16px;
+        color: #333;
+        user-select: none;
+      }
+
+      .zoom-button:hover {
+        background: #f0f0f0;
+        border-color: #999;
+      }
+
+      .zoom-button:active {
+        background: #e0e0e0;
+      }
+
+      .zoom-level {
+        font-size: 11px;
+        text-align: center;
+        color: #666;
+        font-weight: 500;
+        margin: 2px 0;
       }
       /* ... datapath svg styles ... */
       #datapath-svg-object .path-highlight {
@@ -512,6 +628,21 @@
                 checked /><span class="slider"></span
             ></label>
           </div>
+          <div class="control-row">
+            <span>Animation Speed:</span>
+            <div class="speed-control">
+              <input
+                type="range"
+                id="animation-speed-slider"
+                min="2"
+                max="5"
+                step="0.5"
+                value="5"
+                class="speed-slider"
+              />
+              <span id="speed-display">5.0s</span>
+            </div>
+          </div>
           <div class="step-buttons">
             <button id="micro-step-button" disabled>Micro Step</button
             ><button id="full-instruction-button" disabled>
@@ -548,13 +679,37 @@
                 Show CPU State
               </button>
             </h2>
-            <object
-              id="datapath-svg-object"
-              data="{{ url_for('static', filename='test2.svg') }}"
-              type="image/svg+xml"
-            >
-              SVG Overlay not loaded.
-            </object>
+            <div id="datapath-container">
+              <!-- Zoom Controls -->
+              <div class="zoom-controls">
+                <button class="zoom-button" id="zoom-in-button" title="Zoom In">
+                  +
+                </button>
+                <div class="zoom-level" id="zoom-level-display">100%</div>
+                <button
+                  class="zoom-button"
+                  id="zoom-out-button"
+                  title="Zoom Out"
+                >
+                  −
+                </button>
+                <button
+                  class="zoom-button"
+                  id="zoom-reset-button"
+                  title="Reset Zoom"
+                >
+                  ⌂
+                </button>
+              </div>
+
+              <object
+                id="datapath-svg-object"
+                data="{{ url_for('static', filename='test2.svg') }}"
+                type="image/svg+xml"
+              >
+                SVG Overlay not loaded.
+              </object>
+            </div>
           </div>
         </div>
         <!-- MOVED CPU STATE PANEL HERE -->

@@ -205,13 +205,13 @@ class SimulatorEngine:
             
             # ... (active_blocks, active_paths, animated_signals setup for ID)
             active_blocks_id = ["block-control", "block-regs"]
-            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs", "path-instr-regwriteaddr"]
+            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs", "path-instr-regwriteaddr", "path-instr-alucontrol"]
             animated_signals_id = [
                 {"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},
                 {"path_id": "path-instr-control", "bits":[f"{opcode}"], "duration": 0.2},
                 {"path_id": "path-instr-regs", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg1_addr')}"], "duration": 0.2},
                 {"path_id": "path-instr-regwriteaddr", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2},
-                #{"path_id": "path-instr-reg2loc-1", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2}
+                {"path_id": "path-instr-alucontrol", "bits":[f"{opcode}"],"duration":0.2}
             ]
             #yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
             if(self.control_unit.get_control_signals(opcode).get('ALUSrc', 0) == 0 or self.control_unit.get_control_signals(opcode).get('MemWrite') == 1):
@@ -273,9 +273,7 @@ class SimulatorEngine:
                 stage_log_id += decoded_info.get('log', "  (No decode log)") + "\n"
                 #print(decoded_info.get('log', "  (No decode log)") + "\n")
                 read_reg1_addr = decoded_info.get('read_reg1_addr')
-                read_reg2_addr = decoded_info.get('read_reg2_addr')
-                read_reg1_addr = decoded_info.get('read_reg1_addr')
-                read_reg2_addr = decoded_info.get('read_reg2_addr')
+                read_reg2_addr = decoded_info.get('read_reg2_addr', None)
                 if read_reg1_addr:
                     read_data1 = self.registers.read(read_reg1_addr)
                     stage_log_id += f"  Read Register 1 ({read_reg1_addr}): 0x{read_data1:X}\n"
@@ -289,7 +287,17 @@ class SimulatorEngine:
                     if(self.control_unit.get_control_signals(opcode).get('ALUSrc', 0) == 0):
                         active_paths_id.append("path-regs-rdata2")
                         animated_signals_id.append({"path_id": "path-regs-rdata2", "bits":[f"0x{read_data2:X}"], "duration": 0.3, "start_delay": 4.5})
-
+                if decoded_info.get('shamt') is not None:
+                    shamt_bit = int(decoded_info.get('shamt_bit'))
+                    shamt = int(decoded_info.get('shamt'))
+                    sign_extended_imm = dpc.sign_extend(shamt, shamt_bit)
+                    stage_log_id += f"  Sign Extend shamt ({shamt_bit}b): shamt={shamt} -> {sign_extended_imm} (0x{sign_extended_imm:X})\n"
+                    if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
+                    active_paths_id.extend(["path-instr-signext"])
+                    animated_signals_id.extend([
+                        {"path_id": "path-instr-signext", "bits":[f"{shamt}"], "duration": 0.2, "start_delay": 0.1},
+                        #{"path_id": "path-signext-out-mux2", "bits":[f"0x{sign_extended_imm:X}"], "duration": 0.3, "start_delay": 0.3}
+                    ])
                 imm_val = decoded_info.get('imm_val')
                 if imm_val is not None:
                     imm_bits = decoded_info.get('imm_bits', 0)

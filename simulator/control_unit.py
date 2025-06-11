@@ -170,6 +170,32 @@ class ControlUnit:
             'ALUOp': '10',
             'Reg2Loc': 1
         }
+    },
+    'LSL':{
+            'control': {
+            'RegWrite': 1,
+            'ALUSrc': 1,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 0,
+            'UncondBranch': 0,
+            'ALUOp': '10',
+            'Reg2Loc': 0
+        }
+    },
+    'LSR':{
+            'control': {
+            'RegWrite': 1,
+            'ALUSrc': 1,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 0,
+            'UncondBranch': 0,
+            'ALUOp': '10',
+            'Reg2Loc': 0
+        }
     }
 }
 
