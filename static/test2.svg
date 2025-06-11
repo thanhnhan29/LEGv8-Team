@@ -127,8 +127,8 @@
   <g id="block-mux1">
     <rect x="530" y="460" width="30" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
     <text x="545" y="480" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
-    <!-- <text x="575" y="490" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
-    <text x="575" y="510" font-family="Arial" font-size="7" fill="#2E7D32">1</text> -->
+    <text x="570" y="460" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="570" y="490" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
   </g>
 
   <!-- Sign Extend -->
@@ -144,7 +144,7 @@
   <g id="block-mux2">
     <rect x="730" y="480" width="40" height="45" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
     <text x="750" y="505" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
-    <text x="775" y="495" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="775" y="480" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
     <text x="775" y="515" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
   </g>
 
@@ -178,6 +178,8 @@
   <g id="block-mux3">
     <rect x="950" y="630" width="40" height="30" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
     <text x="970" y="645" text-anchor="middle" font-family="Arial" font-size="8" fill="#1B5E20">Mux</text>
+    <text x="935" y="650" font-family="Arial" font-size="7" fill="#2E7D32">0</text>
+    <text x="1000" y="650" font-family="Arial" font-size="7" fill="#2E7D32">1</text>
   </g>
 
   <!-- Shift Left 2 -->
