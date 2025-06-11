@@ -60,16 +60,17 @@ def decode_d_format_store(parts):
             'read_reg2_addr': rt}
 
 def decode_cb_format(parts):
+    print(parts)
     if len(parts) < 3: raise ValueError("Decode Error: Invalid CB-format instruction syntax")
     rt, offset_str = parts[1], parts[2]
     try:
         offset_val = int(offset_str)
     except ValueError:
         raise ValueError(f"Decode Error: Invalid branch offset for CB-format: '{offset_str}'")
-    return {'log': f"  Decode: CB-format (Rt={rt}, ByteOffset={offset_str} [19b origin])",
-            'rt': rt, 'branch_offset_val': offset_val, 'branch_offset_bits': 19,
-            'read_reg1_addr': rt,
-            'read_reg2_addr': None}
+    return {'log': f"  Decode: CB-format (Rt={rt}, ByteOffset={offset_str} [19b origin])"
+            , 'branch_offset_val': offset_val, 'branch_offset_bits': 19,
+            'read_reg1_addr': None,
+            'read_reg2_addr': rt}
 
 def decode_b_format(parts):
     if len(parts) < 2: raise ValueError("Decode Error: Invalid B-format instruction syntax")
@@ -112,8 +113,8 @@ def execute_cb_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm
     offset_val_in = decoded_info.get('branch_offset_val', 0) 
     offset_bits = decoded_info.get('branch_offset_bits', 0) 
 
-    execute_log = f"  Execute: CBZ checking {rt_reg_name}=0x{read_data1:X}.\n"
-    _, alu_zero_flag = ALU.execute(read_data1, 0, 'pass1')
+    execute_log = f"  Execute: CBZ checking {rt_reg_name}=0x{read_data2:X}.\n"
+    _, alu_zero_flag = ALU.execute(0, read_data2, 'pass1')
     execute_log += f"  Execute: ALU Zero Flag = {alu_zero_flag}.\n"
 
     branch_offset_extended = sign_extend(offset_val_in, offset_bits)
@@ -123,7 +124,7 @@ def execute_cb_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm
     execute_log += f"  Execute: Branch Target Address (PC + Offset) = 0x{branch_target_addr:X}"
     
     return {'log': execute_log,
-            'alu_result': read_data1, # Pass Rt value for potential other uses, though not typical for CBZ ALU result
+            'alu_result': read_data2, # Pass Rt value for potential other uses, though not typical for CBZ ALU result
             'alu_zero_flag': alu_zero_flag,
             'branch_target_addr': branch_target_addr}
 
@@ -226,6 +227,7 @@ INSTRUCTION_HANDLERS = {
     'STUR': {'decode': decode_d_format_store,'execute': execute_d_type,   'memory': memory_write,  'writeback': writeback_noop},
     
     'CBZ':  {'decode': decode_cb_format,     'execute': execute_cb_type,  'memory': memory_noop,   'writeback': writeback_noop},
+    'CBNZ':  {'decode': decode_cb_format,     'execute': execute_cb_type,  'memory': memory_noop,   'writeback': writeback_noop},
     'B':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
     # 'NOP':  {'decode': decode_nop,           'execute': execute_nop,      'memory': memory_noop,   'writeback': writeback_noop},
 }

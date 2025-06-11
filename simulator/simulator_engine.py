@@ -205,26 +205,52 @@ class SimulatorEngine:
             
             # ... (active_blocks, active_paths, animated_signals setup for ID)
             active_blocks_id = ["block-control", "block-regs"]
-            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-regs", "path-instr-regwriteaddr", "path-instr-alucontrol"]
+            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-alucontrol"]
             animated_signals_id = [
                 {"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},
                 {"path_id": "path-instr-control", "bits":[f"{opcode}"], "duration": 0.2},
-                {"path_id": "path-instr-regs", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg1_addr')}"], "duration": 0.2},
-                {"path_id": "path-instr-regwriteaddr", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd')}"],"duration":0.2},
-                {"path_id": "path-instr-alucontrol", "bits":[f"{opcode}"],"duration":0.2}
             ]
+            
+            # Safely add register and decode information with None checks
+            try:
+                decoded_info_temp = INSTRUCTION_HANDLERS.get(opcode, {}).get('decode', lambda x: {})(parts)
+                
+                # Add read_reg1_addr if not None
+                read_reg1 = decoded_info_temp.get('read_reg1_addr')
+                if read_reg1 is not None:
+                    animated_signals_id.append({"path_id": "path-instr-regs", "bits":[f"{read_reg1}"], "duration": 0.2})
+                    active_paths_id.append("path-instr-regs")
+                # Add rd (destination register) if not None
+                rd_reg = decoded_info_temp.get('rd')
+                if rd_reg is not None:
+                    animated_signals_id.append({"path_id": "path-instr-regwriteaddr", "bits":[f"{rd_reg}"], "duration": 0.2})
+                    active_paths_id.append("path-instr-regwriteaddr")
+                # Add ALU control opcode
+                #animated_signals_id.append({"path_id": "path-instr-alucontrol", "bits":[f"{opcode}"], "duration": 0.2})
+                
+            except (KeyError, TypeError, AttributeError) as decode_err:
+                print(f"Warning: Could not decode instruction parts for animation: {decode_err}")
+                # Still add the ALU control opcode as fallback
+            animated_signals_id.append({"path_id": "path-instr-alucontrol", "bits":[f"{opcode}"], "duration": 0.2})
             #yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
             if(self.control_unit.get_control_signals(opcode).get('ALUSrc', 0) == 0 or self.control_unit.get_control_signals(opcode).get('MemWrite') == 1):
-                if(self.control_unit.get_control_signals(opcode).get('Reg2loc', 0)==0):
-                    active_paths_id.append("path-instr-reg2loc-0")
-                    animated_signals_id.append({"path_id": "path-instr-reg2loc-0", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg2_addr')}"],"duration":0.2},)
-                else:
-                    active_paths_id.append("path-instr-reg2loc-1")
-                    animated_signals_id.append({"path_id": "path-instr-reg2loc-1", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg1_addr')}"],"duration":0.2},)
-
-                #selected_addr2_mux1 = dpc.mux1(INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rt'), INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('rd'), self.control_unit.get_control_signals(opcode).get('Reg2loc', 0))
-                animated_signals_id.append({"path_id": "path-reg2loc-out", "bits":[f"{INSTRUCTION_HANDLERS.get(opcode)['decode'](parts).get('read_reg2_addr')}"],"duration":0.2})
-                active_paths_id.append("path-reg2loc-out")
+                try:
+                    decoded_info_check = INSTRUCTION_HANDLERS.get(opcode, {}).get('decode', lambda x: {})(parts)
+                    read_reg2_addr = decoded_info_check.get('read_reg2_addr')
+                    
+                    if read_reg2_addr is not None:  # Only proceed if read_reg2_addr exists
+                        if(self.control_unit.get_control_signals(opcode).get('Reg2Loc', 0)==0):
+                            active_paths_id.append("path-instr-reg2loc-0")
+                            animated_signals_id.append({"path_id": "path-instr-reg2loc-0", "bits":[f"{read_reg2_addr}"], "duration":0.2})
+                            animated_signals_id.append({"path_id": "path-reg2loc-out", "bits":[f"{read_reg2_addr}"], "duration":0.2})
+                            active_paths_id.append("path-reg2loc-out")
+                        else:
+                            active_paths_id.append("path-instr-reg2loc-1")
+                            animated_signals_id.append({"path_id": "path-instr-reg2loc-1", "bits":[f"{read_reg2_addr}"], "duration":0.2})
+                            animated_signals_id.append({"path_id": "path-reg2loc-out", "bits":[f"{read_reg2_addr}"], "duration":0.2})
+                            active_paths_id.append("path-reg2loc-out")
+                except (KeyError, TypeError, AttributeError) as e:
+                    print(f"Warning: Could not get read_reg2_addr for Reg2Loc animation: {e}")
             try:
                 control_values = self.control_unit.get_control_signals(opcode)
                 # Add control signal paths for visualization
@@ -343,7 +369,7 @@ class SimulatorEngine:
                     # ... (update paths/signals for branch offset if any in ID)
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
                     active_paths_id.append("path-instr-signext") 
-                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[branch_offset_val], "duration": 0.2, "start_delay": 0.1})
+                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[f"{branch_offset_val}"], "duration": 0.2, "start_delay": 0.1})
 
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
@@ -400,6 +426,8 @@ class SimulatorEngine:
 
                 alu_result_val = exec_result.get('alu_result', 0)
                 alu_zero_flag = exec_result.get('alu_zero_flag', 0)
+                if opcode == "CBNZ":
+                    alu_zero_flag = 1 - alu_zero_flag
                 branch_target_addr_val = exec_result.get('branch_target_addr', 0)
 
                 # ... (visualization for ALU control signal and results)
@@ -413,8 +441,29 @@ class SimulatorEngine:
                     if(int(control_values.get('MemToReg', 0)) == 0):
                         active_paths_ex.append("path-alu-mux3") 
                         animated_signals_ex.append({"path_id": "path-alu-mux3", "bits":[f"0x{alu_result_val:X}"], "duration": 0.3, "start_delay": 0.2})
+                    
                     active_paths_ex.append("path-alu-zero")
-                    animated_signals_ex.append({"path_id": "path-alu-zero", "bits":[f"{alu_zero_flag}"], "duration": 0.1, "start_delay": 0.2})
+                    zero_flag_display = "ZERO"
+                    # Display appropriate zero flag visualization based on instruction
+                    if opcode == "CBNZ":
+                        # For CBNZ, show "NOT ZERO" since we want to branch when NOT zero
+                        zero_flag_display = "NOT ZERO" if alu_zero_flag == 1 else "ZERO"
+                    
+                        # For other instructions (CBZ, etc.), show normal zero flag
+                   
+                    
+                    animated_signals_ex.append({"path_id": "path-alu-zero", "bits":[alu_zero_flag], "duration": 0.1, "start_delay": 0.2})
+                    
+                    # Add special instruction to update SVG text element for zero flag display
+                    animated_signals_ex.append({
+                        "path_id": "u", 
+                        "bits": [alu_zero_flag], 
+                        "duration": 0.1, 
+                        "start_delay": 0.2,
+                        "svg_text_update": True,
+                        "target_element_text": "Zero", 
+                        "new_text": zero_flag_display
+                    })
 
                 if branch_target_addr_val != 0: 
                     if "block-adder2" not in active_blocks_ex: active_blocks_ex.append("block-adder2")

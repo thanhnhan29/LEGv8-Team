@@ -10,7 +10,7 @@ class ALU:
         elif operation == 'and': result = op1_int & op2_int
         elif operation == 'orr': result = op1_int | op2_int
         elif operation == 'eor': result = op1_int ^ op2_int
-        elif operation == 'pass1': result = op1_int 
+        elif operation == 'pass1': result = op2_int 
         elif operation == 'mul': result = op1_int * op2_int
         elif operation == 'div':
             if op2_int == 0:

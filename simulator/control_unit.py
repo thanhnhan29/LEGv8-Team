@@ -12,7 +12,7 @@ class ControlUnit:
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '10',
-            'Reg2Loc': 1
+            'Reg2Loc': 0
         }
     },
     'SUB': {
@@ -25,7 +25,7 @@ class ControlUnit:
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '10',
-            'Reg2Loc': 1
+            'Reg2Loc': 0
         }
     },
     'AND': {
@@ -38,7 +38,7 @@ class ControlUnit:
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '10',
-            'Reg2Loc': 1
+            'Reg2Loc': 0
         }
     },
     'ORR': {
@@ -51,7 +51,7 @@ class ControlUnit:
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '10',
-            'Reg2Loc': 1
+            'Reg2Loc': 0
         }
     },
     'EOR': {
@@ -64,7 +64,7 @@ class ControlUnit:
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '10',
-            'Reg2Loc': 1
+            'Reg2Loc': 0
         }
     },
     'ADDI': {
@@ -168,7 +168,20 @@ class ControlUnit:
             'Branch': 1,
             'UncondBranch': 0,
             'ALUOp': '01',
-            'Reg2Loc': 0
+            'Reg2Loc': 1
+        }
+    },
+    'CBNZ': {
+        'control': {
+            'RegWrite': 0,
+            'ALUSrc': 0,
+            'MemRead': 0,
+            'MemWrite': 0,
+            'MemToReg': 0,
+            'Branch': 1,
+            'UncondBranch': 0,
+            'ALUOp': '01',
+            'Reg2Loc': 1
         }
     },
     'B': {

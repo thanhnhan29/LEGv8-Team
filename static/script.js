@@ -1832,6 +1832,16 @@
       // Create animations for backend signals if available
       if (stepData.animated_signals && stepData.animated_signals.length > 0) {
         stepData.animated_signals.forEach((signal) => {
+          // Check if this is a special SVG text update instruction
+          if (
+            signal.svg_text_update &&
+            signal.target_element_text &&
+            signal.new_text
+          ) {
+            updateSvgTextElement(signal.target_element_text, signal.new_text);
+            return; // Skip normal animation for this signal
+          }
+
           const mappedId = mapSvgId(signal.path_id);
           let pathElement = svgDoc.getElementById(mappedId);
 
@@ -2354,9 +2364,13 @@
     setSimulationState(simulationLoaded, true);
 
     // Slower intervals for better visualization
-    const animationDelayMs = (animationSpeed * 1000) + 1000; // Convert to ms and add 1s buffer
-    const microStepInterval = showAnimationsToggle.checked ? animationDelayMs : 400; // Use animation speed if enabled
-    const instructionInterval = showAnimationsToggle.checked ? Math.max(800, animationDelayMs * 0.5) : 200; // Half delay between instructions
+    const animationDelayMs = animationSpeed * 1000 + 1000; // Convert to ms and add 1s buffer
+    const microStepInterval = showAnimationsToggle.checked
+      ? animationDelayMs
+      : 400; // Use animation speed if enabled
+    const instructionInterval = showAnimationsToggle.checked
+      ? Math.max(800, animationDelayMs * 0.5)
+      : 200; // Half delay between instructions
 
     console.log(
       `Starting auto-run with micro-step interval: ${microStepInterval}ms`
@@ -2590,6 +2604,46 @@
       );
     } catch (err) {
       console.error("Error clearing all text animations:", err);
+    }
+  }
+
+  // Function to update SVG text elements dynamically
+  function updateSvgTextElement(targetText, newText) {
+    if (!svgDoc) {
+      console.warn("updateSvgTextElement: No SVG document available");
+      return;
+    }
+
+    try {
+      // Find all text elements in the SVG
+      const textElements = svgDoc.querySelectorAll("text");
+
+      // Look for text element containing the target text
+      for (let textEl of textElements) {
+        if (
+          textEl.textContent &&
+          textEl.textContent
+            .trim()
+            .toLowerCase()
+            .includes(targetText.toLowerCase())
+        ) {
+          console.log(
+            `🔄 Updating SVG text "${textEl.textContent}" → "${newText}"`
+          );
+          textEl.textContent = newText;
+
+          // Reset to normal after a delay
+
+
+          return; // Exit after first match
+        }
+      }
+
+      console.warn(
+        `updateSvgTextElement: No text element found containing "${targetText}"`
+      );
+    } catch (err) {
+      console.error("Error updating SVG text element:", err);
     }
   }
 
