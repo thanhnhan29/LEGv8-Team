@@ -1,6 +1,7 @@
 ﻿
 from .alu import ALU
 from .datapath_components import sign_extend, branch_target_adder
+from .alu_mappings import ALU_OP_MAPPINGS, get_alu_operation
 
 
 # --- Decode Handlers ---
@@ -84,9 +85,10 @@ def decode_b_format(parts):
             'read_reg1_addr': None, 'read_reg2_addr': None}
 
 # --- Execute Handlers ---
-def execute_alu_op(decoded_info, alu_op_map, alu_input1, alu_input2):
+def execute_alu_op(decoded_info, alu_input1, alu_input2):
+    """Generic ALU operation executor using centralized mapping"""
     opcode = decoded_info['opcode']
-    operation = alu_op_map.get(opcode)
+    operation = get_alu_operation(opcode)
     if not operation:
         raise ValueError(f"Execute Error: ALU operation mapping missing for {opcode}")
     alu_result, alu_zero_flag = ALU.execute(alu_input1, alu_input2, operation)
@@ -97,16 +99,13 @@ def execute_alu_op(decoded_info, alu_op_map, alu_input1, alu_input2):
             'alu_result': alu_result, 'alu_zero_flag': alu_zero_flag}
 
 def execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    alu_op_map = {'ADD': 'add', 'SUB': 'sub', 'AND': 'and', 'ORR': 'orr', 'MUL': 'mul', 'DIV': 'div', 'LSL': 'lsl', 'LSR':'lsr', 'EOR': 'eor'}
-    return execute_alu_op(decoded_info, alu_op_map, read_data1, read_data2)
+    return execute_alu_op(decoded_info, read_data1, read_data2)
 
 def execute_i_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    alu_op_map = {'ADDI': 'add', 'SUBI': 'sub', 'ANDI': 'and', 'ORRI': 'orr', 'EORI': 'eor'}
-    return execute_alu_op(decoded_info, alu_op_map, read_data1, sign_ext_imm)
+    return execute_alu_op(decoded_info, read_data1, sign_ext_imm)
 
 def execute_d_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    alu_op_map = {'LDUR': 'add', 'STUR': 'add'} 
-    return execute_alu_op(decoded_info, alu_op_map, read_data1, sign_ext_imm)
+    return execute_alu_op(decoded_info, read_data1, sign_ext_imm)
 
 def execute_cb_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
     rt_reg_name = decoded_info.get('rt', 'N/A')

@@ -1,5 +1,4 @@
-﻿# -*- coding: utf-8 -*-
-
+﻿
 class ALU:
     @staticmethod
     def execute(operand1, operand2, operation):
