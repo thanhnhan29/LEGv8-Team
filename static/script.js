@@ -782,7 +782,43 @@
   ];
 
   // --- Initial Code (Unchanged) ---
-  codeEditor.value = `// Example program:\n// Or Upload a file (.S, .asm, .txt)\nADDI X1, XZR, #10    // X1 = 10\nADDI X2, XZR, #5     // X2 = 5\nloop:               \nADD X3, X1, X2       // X3 = X1 + X2 = 15\nSTUR X3, [SP, #8]    // Store X3 to Mem[SP+8]\nSUBI X2, X2, #1      // X2 = X2 - 1\nCBZ X2, end          // Branch if X2 is zero\nB loop               // Unconditional branch to loop\nend:                 \nADD X6, X6, #1       // Executed after loop finishes\n// End`;
+  codeEditor.value = `
+// LEGv8 demo program using full instruction set
+
+ADDI X1, XZR, #10        // X1 = 10
+ADDI X2, XZR, #5         // X2 = 5
+
+// Bitwise operations
+ANDI X7, X1, #15         // X7 = X1 & 15
+ORRI X8, X1, #1          // X8 = X1 | 1
+EORI X9, X1, #7          // X9 = X1 ^ 7
+
+// R-type bitwise
+AND X10, X1, X2          // X10 = X1 & X2
+ORR X11, X1, X2          // X11 = X1 | X2
+EOR X12, X1, X2          // X12 = X1 ^ X2
+
+// Arithmetic
+ADD X13, X1, X2          // X13 = X1 + X2
+SUB X14, X1, X2          // X14 = X1 - X2
+SUBI X15, X2, #1         // X15 = X2 - 1
+
+// Shift operations
+LSL X16, X1, #4          // X16 = X1 << X6
+LSR X17, X1, #4          // X17 = X1 >> X6
+
+// Memory
+STUR X13, [SP, #8]       // Store X13 to Mem[SP+8]
+LDUR X20, [SP, #8]       // Load Mem[SP+8] to X20
+
+// Branching
+loop:
+    SUBI X2, X2, #1      // X2--
+    CBZ X2, end          // if X2 == 0 jump to end
+    B loop               // Unconditional jump to loop
+
+end:
+  `;
 
   // --- GSAP Registration (Unchanged) ---
   gsap.registerPlugin(MotionPathPlugin);
@@ -2114,7 +2150,7 @@
       isNaN(numericAddr) || numericAddr < 0
         ? "N/A"
         : `0x${numericAddr.toString(16).toUpperCase()}`;
-    currentInstrDisplay.textContent = `${displayAddr}: ${text || "N/A"}`;
+    currentInstrDisplay.textContent = `${text || "N/A"}`;
     highlightLine(numericAddr);
   }
 
@@ -2633,7 +2669,6 @@
           textEl.textContent = newText;
 
           // Reset to normal after a delay
-
 
           return; // Exit after first match
         }

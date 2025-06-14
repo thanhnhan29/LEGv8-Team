@@ -142,7 +142,7 @@ class ControlUnit:
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '00',
-            'Reg2Loc': 0
+            'Reg2Loc': 'X'
         }
     },
     'STUR': {
@@ -151,7 +151,7 @@ class ControlUnit:
             'ALUSrc': 1,
             'MemRead': 0,
             'MemWrite': 1,
-            'MemToReg': 0,
+            'MemToReg': 'X',
             'Branch': 0,
             'UncondBranch': 0,
             'ALUOp': '00',
@@ -164,7 +164,7 @@ class ControlUnit:
             'ALUSrc': 0,
             'MemRead': 0,
             'MemWrite': 0,
-            'MemToReg': 0,
+            'MemToReg': 'X',
             'Branch': 1,
             'UncondBranch': 0,
             'ALUOp': '01',
@@ -187,14 +187,14 @@ class ControlUnit:
     'B': {
         'control': {
             'RegWrite': 0,
-            'ALUSrc': 0,
+            'ALUSrc': "X",
             'MemRead': 0,
             'MemWrite': 0,
-            'MemToReg': 0,
+            'MemToReg': "X",
             'Branch': 0,
             'UncondBranch': 1,
             'ALUOp': 'XX',
-            'Reg2Loc': 0
+            'Reg2Loc': "X"
         }
     },
     'NOP': {

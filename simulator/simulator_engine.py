@@ -315,9 +315,9 @@ class SimulatorEngine:
             
             # Setup visualization components for Decode stage
             active_blocks_id = ["block-control", "block-regs"]
-            active_paths_id = ["path-imem-out", "path-instr-control", "path-instr-alucontrol"]
+            active_paths_id = ["path-instr-control", "path-instr-alucontrol"]
             animated_signals_id = [
-                {"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},
+                #{"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},
                 {"path_id": "path-instr-control", "bits":[f"{opcode}"], "duration": 0.2},
             ]
             
@@ -485,7 +485,7 @@ class SimulatorEngine:
                     # ... (update paths/signals for branch offset if any in ID)
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
                     active_paths_id.append("path-instr-signext") 
-                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[f"{branch_offset_val}"], "duration": 0.2, "start_delay": 0.1})
+                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[f"{(branch_offset_val)//4}"], "duration": 0.2, "start_delay": 0.1})
 
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
@@ -552,7 +552,7 @@ class SimulatorEngine:
                     animated_signals_ex.append({"path_id": "control-alucontrol-alu", "bits":[alu_control_bits], "duration": 0.15, "start_delay": 0.1})
                     
                     # ALU result output (only if not going to memory)
-                    if(int(control_values.get('MemToReg', 0)) == 0):
+                    if(control_values.get('MemToReg', 0) != 'X' and int(control_values.get('MemToReg', 0)) == 0):
                         active_paths_ex.append("path-alu-mux3") 
                         animated_signals_ex.append({"path_id": "path-alu-mux3", "bits":[f"0x{alu_result_val:X}"], "duration": 0.3, "start_delay": 0.2})
                     
@@ -590,7 +590,7 @@ class SimulatorEngine:
                     
                     # Sign extend to shift left
                     active_paths_ex.append("path-signext-br-shift") 
-                    animated_signals_ex.append({"path_id": "path-signext-br-shift", "bits":[f"0x{branch_offset_val:X}"], "duration": 0.2})
+                    animated_signals_ex.append({"path_id": "path-signext-br-shift", "bits":[f"0x{(branch_offset_val)//4:X}"], "duration": 0.2})
                     
                     # Shift left to branch adder
                     active_paths_ex.append("path-shift-adder2") 
