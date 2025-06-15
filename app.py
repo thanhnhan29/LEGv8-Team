@@ -5,7 +5,6 @@ import traceback
 # Import from our simulator package
 from simulator.simulator_engine import SimulatorEngine
 from simulator.assembler import Assembler
-# from simulator.micro_step import MicroStepState # Not directly used in app.py but good to know it's there
 
 app = Flask(__name__)
 
@@ -33,12 +32,14 @@ def api_load():
         # Load the parsed data into the simulator engine
         instr_count = simulator_engine.load_program_data(processed_instr, raw_instr, labels)
 
+        simulator_engine._save_state_snapshot()
         return jsonify({
             "status": "success",
             "message": f"{instr_count} instructions loaded. Ready to run.",
             "cpu_state": simulator_engine.get_cpu_state_for_api(),
             "initial_instr_addr": f"0x{simulator_engine.current_instr_addr_for_display:X}",
-            "initial_instr_str": simulator_engine.current_instr_str_for_display
+            "initial_instr_str": simulator_engine.current_instr_str_for_display,
+            "can_return_back": simulator_engine.can_return_back()
         })
 
     except Exception as e:
@@ -66,6 +67,20 @@ def api_micro_step():
     return jsonify(response_data), http_status_code
 
 
+@app.route('/api/return_back', methods=['POST'])
+def api_return_back():
+    print(f"\n>>> Received /api/return_back (Current Sim PC=0x{simulator_engine.pc:X}) <<<")
+    
+    # Call the return_back method from simulator_engine
+    response_data = simulator_engine.return_back()
+    
+    # Determine HTTP status code based on simulator's response status
+    http_status_code = 200
+    if response_data.get("status") == "error":
+        http_status_code = 400  # Bad Request for return back errors
+    
+    return jsonify(response_data), http_status_code
+
 @app.route('/api/reset', methods=['POST'])
 def api_reset_state():
     print("\n>>> Received /api/reset request <<<")
@@ -73,11 +88,12 @@ def api_reset_state():
     assembler.label_table.clear() # Also clear assembler state if any
     assembler.instruction_memory.clear()
     assembler.raw_instruction_memory.clear()
-    
+    simulator_engine._save_state_snapshot()
     return jsonify({
         "status": "success",
         "message": "Simulator has been reset.",
-        "cpu_state": simulator_engine.get_cpu_state_for_api()
+        "cpu_state": simulator_engine.get_cpu_state_for_api(),
+        "can_return_back": simulator_engine.can_return_back()
     })
 
 if __name__ == '__main__':

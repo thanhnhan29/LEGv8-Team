@@ -205,6 +205,20 @@
         background-color: #c82333;
         border-color: #bd2130;
       }
+      #execution-panel #return-back-button {
+        background-color: #6f42c1;
+        color: white;
+        border-color: #6f42c1;
+      }
+      #execution-panel #return-back-button:hover {
+        background-color: #5a32a3;
+        border-color: #5a32a3;
+      }
+      #execution-panel #return-back-button:disabled {
+        background-color: #e9ecef;
+        color: #adb5bd;
+        border-color: #dee2e6;
+      }
       .switch {
         position: relative;
         display: inline-block;
@@ -644,8 +658,9 @@
             </div>
           </div>
           <div class="step-buttons">
-            <button id="micro-step-button" disabled>Micro Step</button
-            ><button id="full-instruction-button" disabled>
+            <button id="return-back-button" disabled>← Return Back</button>
+            <button id="micro-step-button" disabled>Micro Step</button>
+            <button id="full-instruction-button" disabled>
               Full Instruction
             </button>
           </div>

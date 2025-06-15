@@ -37,8 +37,12 @@ class SimulatorEngine:
         self.micro_step_index_internal = -1      # Tracks micro-step within current instruction execution
         self.instruction_completed_flag = False  # Set when an instruction finishes all its micro-steps
 
-        self.initialize_state()
+        # NEW: State history system for return back functionality
+        self.state_history = []  # Store state snapshots
+        self.max_history_size = 100  # Limit number of snapshots  
+        self.current_history_index = -1  # Current position in history
 
+        self.initialize_state()
     def initialize_state(self):
         """
         Reset the simulator to its initial state.
@@ -83,6 +87,18 @@ class SimulatorEngine:
         self.micro_step_index_internal = -1
         self.instruction_completed_flag = False
         print("--- Simulator engine state reset to defaults. ---")
+
+        # Reset state history
+        if not hasattr(self, 'state_history'):
+            self.state_history = []
+        if not hasattr(self, 'current_history_index'):
+            self.current_history_index = -1
+        if not hasattr(self, 'max_history_size'):
+            self.max_history_size = 100
+            
+        self.state_history.clear()
+        self.current_history_index = -1
+        #self._save_state_snapshot()
 
     def load_program_data(self, processed_instr_dict, raw_instr_dict, labels_dict, binary_instr_dict=None):
         """
@@ -328,7 +344,7 @@ class SimulatorEngine:
                 # Add read_reg1_addr animation if not None
                 read_reg1 = decoded_info_temp.get('read_reg1_addr')
                 if read_reg1 is not None:
-                    animated_signals_id.append({"path_id": "path-instr-regs", "bits":[f"{read_reg1}"], "duration": 0.2})
+                    animated_signals_id.append({"path_id": "path-instr-regs", "bits":[f"{read_reg1}"], "duration":0.2})
                     active_paths_id.append("path-instr-regs")
                     
                 # Add rd (destination register) animation if not None
@@ -564,7 +580,7 @@ class SimulatorEngine:
                         zero_flag_display = "NOT ZERO" if alu_zero_flag == 1 else "ZERO"
                     
                         # For other instructions (CBZ, etc.), show normal zero flag
-                        #zero_flag_display = "ZERO" if alu_zero_flag == 1 else "NOT ZERO"
+                        #zero_flag_display = "ZERO" if alu_zero_flag == 1 : "NOT ZERO"
                     
                     animated_signals_ex.append({"path_id": "path-alu-zero", "bits":[alu_zero_flag], "duration": 0.1, "start_delay": 0.2})
                     
@@ -836,6 +852,18 @@ class SimulatorEngine:
             - Modifies internal state machine variables
             - May terminate simulation on errors or program end
         """
+        # Lưu snapshot trước khi thực hiện step - CHỈ Ở ĐẦU INSTRUCTION
+        print(f"📸 Checking if should save snapshot...")
+        current_micro_step = getattr(self, 'micro_step_index_internal', -1)
+        print(f"📸 Current micro step: {current_micro_step}")
+        
+        # CHỈ save snapshot khi bắt đầu instruction mới (micro_step_index_internal == -1)
+        if current_micro_step == 0:
+            print(f"📸 Saving instruction-level snapshot before starting new instruction")
+            self._save_state_snapshot()
+        else:
+            print(f"📸 Skipping snapshot - already in instruction (micro step {current_micro_step})")
+
         if not self.simulation_loaded:
             error_msg = self.error_state or 'Simulation not loaded or has ended.'
             print(f"Micro-step request rejected: {error_msg}")
@@ -845,6 +873,10 @@ class SimulatorEngine:
             # Handle state transitions between instructions
             if self.instruction_completed_flag:
                 print("--- Transitioning to next instruction ---")
+                
+                # QUAN TRỌNG: Save snapshot khi instruction hoàn thành, trước khi move to next
+                print(f"📸 Instruction completed - preparing for next instruction")
+                
                 self.instruction_completed_flag = False
                 self.current_instruction_generator = None
                 self.micro_step_index_internal = -1
@@ -905,7 +937,8 @@ class SimulatorEngine:
                     "status": "success",
                     "step_data": step_data_dict,
                     "cpu_state": self.get_cpu_state_for_api(),
-                    "enable_next": True
+                    "enable_next": True,
+                    "can_return_back": self.can_return_back()
                 }
 
             except StopIteration as e:
@@ -953,6 +986,7 @@ class SimulatorEngine:
                         "next_pc": f"0x{self.pc:X}",
                         "next_instruction": next_instr_raw_str,
                         "enable_next": True,
+                        "can_return_back": self.can_return_back()
                     }
                 except ValueError:  # Next PC is invalid (end of program)
                     self.simulation_loaded = False
@@ -976,4 +1010,540 @@ class SimulatorEngine:
                 "status": "error",
                 "message": self.error_state,
                 "cpu_state": self.get_cpu_state_for_api()
+            }
+        
+    def _save_state_snapshot(self):
+        """Lưu snapshot trạng thái hiện tại vào lịch sử"""
+        print("sdf")
+        try:
+            # CHỈ lưu snapshot ở ĐẦUE instruction (micro step = -1 hoặc 0)
+            current_micro_step = getattr(self, 'micro_step_index_internal', -1)
+            
+            # Chỉ save khi bắt đầu instruction mới (trước micro step đầu tiên)
+            if current_micro_step >0:
+                print(f"📸 Skipping snapshot save - in middle of instruction (micro step {current_micro_step})")
+                return
+            
+            print(f"📸 Saving instruction-level snapshot (before micro steps)")
+            
+            # Handle registers properly - check if it's RegisterFile object or dict
+            registers_data = {}
+            if hasattr(self, 'registers') and self.registers:
+                if hasattr(self.registers, 'get_all_registers'):
+                    # Get raw register values (not formatted hex strings)
+                    registers_data = self.registers.get_all_registers()
+                    print(f"📸 Got registers via get_all_registers(): {list(registers_data.items())[:3]}")
+                elif hasattr(self.registers, 'get_raw_registers'):
+                    # Alternative method name
+                    registers_data = self.registers.get_raw_registers()
+                    print(f"📸 Got registers via get_raw_registers(): {list(registers_data.items())[:3]}")
+                elif hasattr(self.registers, '__dict__'):
+                    # Fallback: serialize object attributes, but get raw values
+                    registers_data = {}
+                    for attr in dir(self.registers):
+                        if not attr.startswith('_') and not callable(getattr(self.registers, attr)):
+                            try:
+                                value = getattr(self.registers, attr)
+                                if isinstance(value, (int, float)):
+                                    registers_data[attr] = int(value)  # Store as int, not string
+                                elif isinstance(value, str) and value.startswith('0x'):
+                                    registers_data[attr] = int(value, 16)  # Parse hex string to int
+                                elif isinstance(value, (list, dict)):
+                                    registers_data[attr] = value
+                            except:
+                                pass
+                    print(f"📸 Got registers via __dict__ scan: {list(registers_data.items())[:3]}")
+                elif isinstance(self.registers, dict):
+                    # Make sure we store int values, not hex strings
+                    registers_data = {}
+                    for reg_name, reg_value in self.registers.items():
+                        if isinstance(reg_value, str) and reg_value.startswith('0x'):
+                            registers_data[reg_name] = int(reg_value, 16)
+                        else:
+                            registers_data[reg_name] = int(reg_value) if isinstance(reg_value, (int, str)) else reg_value
+                    print(f"📸 Got registers via dict conversion: {list(registers_data.items())[:3]}")
+                else:
+                    print(f"Warning: Unknown registers type: {type(self.registers)}")
+                    registers_data = {}
+            
+            # Handle memory - use helper method
+            memory_data = self.get_memory_backup()
+            import copy
+            snapshot = {
+                'pc': getattr(self, 'pc', 0),
+                'registers': copy.deepcopy(self.registers),
+                'memory_data': memory_data,
+                'current_instr_addr_for_display': getattr(self, 'current_instr_addr_for_display', 0),
+                'current_instr_str_for_display': getattr(self, 'current_instr_str_for_display', ''),
+                'micro_step_index': getattr(self, 'micro_step_index_internal', -1),
+                'execution_finished': getattr(self, 'execution_finished', False),
+                'is_running': getattr(self, 'is_running', False),
+                'execution_stage_name': getattr(self, 'execution_stage_name', ''),
+                'label_table': getattr(self, 'label_table', {}).copy() if hasattr(self, 'label_table') and isinstance(getattr(self, 'label_table', {}), dict) else {}
+            }
+            
+            # Print snapshot summary
+            print(f"📸 SNAPSHOT SUMMARY:")
+            print(f"📸   PC: 0x{snapshot['pc']:X}")
+            #print(f"📸   Registers: {(snapshot['registers'])} entries")
+            # if snapshot['registers']:
+            #     sample_regs = list(snapshot['registers'].items())[:3]
+            #     for reg_name, reg_val in sample_regs:
+            #         print(f"📸     {reg_name}: 0x{reg_val:X}" if isinstance(reg_val, int) else f"📸     {reg_name}: {reg_val}")
+            # print(f"📸   Memory: {len(snapshot['memory_data'])} memory sections")
+            # for mem_type, mem_data in snapshot['memory_data'].items():
+            #     if mem_data:
+            #         print(f"📸     {mem_type}: {len(mem_data)} entries")
+            # print(f"📸   Instruction: {snapshot['current_instr_str_for_display']}")
+            # print(f"📸   Micro step: {snapshot['micro_step_index']}")
+            
+            # Nếu đang ở giữa lịch sử (do return back), xóa các snapshot sau vị trí hiện tại
+            if self.current_history_index < len(self.state_history) - 1:
+                removed_count = len(self.state_history) - self.current_history_index - 1
+                self.state_history = self.state_history[:self.current_history_index + 1]
+                print(f"📸 Cleared {removed_count} future snapshots due to new step")
+            
+            # Thêm snapshot mới
+            self.state_history.append(snapshot)
+            self.current_history_index = len(self.state_history) - 1
+            
+            # Giới hạn kích thước lịch sử
+            if len(self.state_history) > self.max_history_size:
+                self.state_history.pop(0)
+                self.current_history_index -= 1
+                
+            print(f"📸 State snapshot saved. History size: {len(self.state_history)}, Current index: {self.current_history_index}")
+            print(f"📸 Can return back after save: {self.can_return_back()}")
+            
+        except Exception as e:
+            print(f"Error saving state snapshot: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # Helper method to ensure get_memory_backup exists and works
+    def ensure_memory_backup_methods(self):
+        """Ensure memory backup methods are available"""
+        if not hasattr(self, 'get_memory_backup'):
+            print("ERROR: get_memory_backup method not found!")
+            return False
+        if not hasattr(self, '_backup_memory_object'):
+            print("ERROR: _backup_memory_object method not found!")  
+            return False
+        if not hasattr(self, 'restore_memory_backup'):
+            print("ERROR: restore_memory_backup method not found!")
+            return False
+        return True
+    
+    # Override _save_state_snapshot to ensure methods exist
+    def _save_state_snapshot_safe(self):
+        """Safe version of _save_state_snapshot with method checking"""
+        try:
+            # Check methods exist - try direct call first
+            try:
+                memory_data = self.get_memory_backup()
+            except AttributeError:
+                print("Warning: get_memory_backup method missing, using fallback")
+                memory_data = {}
+            
+            # Handle registers safely
+            registers_data = {}
+            if hasattr(self, 'registers') and self.registers:
+                if hasattr(self.registers, 'get_all_registers'):
+                    registers_data = self.registers.get_all_registers()
+                elif hasattr(self.registers, '__dict__'):
+                    registers_data = {}
+                    for attr in dir(self.registers):
+                        if not attr.startswith('_') and not callable(getattr(self.registers, attr)):
+                            try:
+                                value = getattr(self.registers, attr)
+                                if isinstance(value, (int, float, str, list, dict)):
+                                    registers_data[attr] = value
+                            except:
+                                pass
+                elif isinstance(self.registers, dict):
+                    registers_data = self.registers.copy()
+            
+            snapshot = {
+                'pc': getattr(self, 'pc', 0),
+                'registers': registers_data,
+                'memory_data': memory_data,
+                'current_instr_addr_for_display': getattr(self, 'current_instr_addr_for_display', 0),
+                'current_instr_str_for_display': getattr(self, 'current_instr_str_for_display', ''),
+                'micro_step_index': getattr(self, 'micro_step_index_internal', getattr(self, 'micro_step_index', -1)),
+                'execution_finished': getattr(self, 'execution_finished', False),
+                'is_running': getattr(self, 'is_running', False),
+                'execution_stage_name': getattr(self, 'execution_stage_name', ''),
+                'label_table': getattr(self, 'label_table', {}).copy() if hasattr(self, 'label_table') and isinstance(getattr(self, 'label_table', {}), dict) else {}
+            }
+            
+            # Manage history
+            if self.current_history_index < len(self.state_history) - 1:
+                self.state_history = self.state_history[:self.current_history_index + 1]
+            
+            self.state_history.append(snapshot)
+            self.current_history_index = len(self.state_history) - 1
+            
+            if len(self.state_history) > self.max_history_size:
+                self.state_history.pop(0)
+                self.current_history_index -= 1
+                
+            print(f"📸 State snapshot saved safely. History size: {len(self.state_history)}, Index: {self.current_history_index}")
+            
+        except Exception as e:
+            print(f"Error saving state snapshot: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # Updated step_micro to use safe snapshot
+    def step_micro_with_snapshot(self):
+        """Step micro with safe state snapshot"""
+        # Save snapshot safely before step
+        self._save_state_snapshot_safe()
+        
+        # Continue with original step_micro implementation
+        # This should call the actual step_micro logic
+        
+        # Return with can_return_back info
+        return {
+            "status": "success",
+            "message": "Micro step completed", 
+            "can_return_back": self.can_return_back()
+        }
+    
+    def can_return_back(self):
+        """Kiểm tra có thể return back về instruction trước đó không"""
+        # Cần có ít nhất 1 instruction snapshot trong history
+        has_history = hasattr(self, 'current_history_index') and hasattr(self, 'state_history')
+        
+        if not has_history:
+            print(f"🔙 Can return back: NO - No history system")
+            return False
+            
+        # Cần có ít nhất 1 instruction trước đó (index > 0)
+        has_previous_instruction = self.current_history_index > 0
+        
+        # Log detailed info
+        history_size = len(self.state_history) if hasattr(self, 'state_history') else 0
+        current_index = self.current_history_index if hasattr(self, 'current_history_index') else -1
+        
+        print(f"🔙 Can return back check: history_size={history_size}, current_index={current_index}, can_return={has_previous_instruction}")
+        
+        return has_previous_instruction
+
+    # ===== MEMORY BACKUP METHODS =====
+    def get_memory_backup(self):
+        """Helper method to backup memory data from various possible attributes"""
+        memory_backup = {}
+        
+        # Backup data_memory (chính)
+        if hasattr(self, 'data_memory') and self.data_memory:
+            memory_backup['data_memory'] = copy.deepcopy(self.data_memory)
+        
+        # Backup instruction_memory nếu tồn tại riêng biệt
+        if hasattr(self, 'instruction_memory') and self.instruction_memory:
+            memory_backup['instruction_memory'] = self._backup_memory_object(self.instruction_memory)
+        
+        # Backup raw_instruction_memory
+        if hasattr(self, 'raw_instruction_memory') and self.raw_instruction_memory:
+            memory_backup['raw_instruction_memory'] = self._backup_memory_object(self.raw_instruction_memory)
+        
+        # Backup binary_instruction_memory
+        if hasattr(self, 'binary_instruction_memory') and self.binary_instruction_memory:
+            memory_backup['binary_instruction_memory'] = self._backup_memory_object(self.binary_instruction_memory)
+            
+        return memory_backup
+
+    def _backup_memory_object(self, memory_obj):
+        """Helper method to safely backup a memory object"""
+        if not memory_obj:
+            return {}
+        import copy
+        try:
+            if hasattr(memory_obj, 'get_raw_memory'):
+                return memory_obj.get_raw_memory()
+            elif hasattr(memory_obj, 'memory') and isinstance(memory_obj.memory, dict):
+                return copy.deepcoy(memory_obj.memory)
+            elif isinstance(memory_obj, dict):
+                return copy.deepcoy(memory_obj)
+            else:
+                print(f"Warning: Unknown memory object type: {type(memory_obj)}")
+                return {}
+        except Exception as e:
+            print(f"Error backing up memory object: {e}")
+            return {}
+
+    def restore_memory_backup(self, memory_backup):
+        """Helper method to restore memory data to various possible attributes"""
+        if not memory_backup:
+            return
+            
+        try:
+            # Restore data_memory
+            if 'data_memory' in memory_backup and hasattr(self, 'data_memory'):
+                self._restore_memory_object(self.data_memory, memory_backup['data_memory'])
+            
+            # Restore instruction_memory
+            if 'instruction_memory' in memory_backup and hasattr(self, 'instruction_memory'):
+                self._restore_memory_object(self.instruction_memory, memory_backup['instruction_memory'])
+            
+            # Restore raw_instruction_memory
+            if 'raw_instruction_memory' in memory_backup and hasattr(self, 'raw_instruction_memory'):
+                self._restore_memory_object(self.raw_instruction_memory, memory_backup['raw_instruction_memory'])
+            
+            # Restore binary_instruction_memory
+            if 'binary_instruction_memory' in memory_backup and hasattr(self, 'binary_instruction_memory'):
+                self._restore_memory_object(self.binary_instruction_memory, memory_backup['binary_instruction_memory'])
+                
+        except Exception as e:
+            print(f"Warning: Could not restore memory backup: {e}")
+
+    def _restore_memory_object(self, memory_obj, backup_data):
+        """Helper method to safely restore a memory object"""
+        if not memory_obj or not backup_data:
+            return
+        
+        try:
+            if hasattr(memory_obj, 'set_raw_memory'):
+                memory_obj.set_raw_memory(backup_data)
+            elif hasattr(memory_obj, 'memory') and isinstance(memory_obj.memory, dict):
+                memory_obj.memory.clear()
+                memory_obj.memory.update(backup_data)
+            elif isinstance(memory_obj, dict):
+                memory_obj.clear()
+                memory_obj.update(backup_data)
+            else:
+                print(f"Warning: Cannot restore memory object type: {type(memory_obj)}")
+        except Exception as e:
+            print(f"Error restoring memory object: {e}")
+
+    def _restore_state_snapshot_fixed(self, snapshot):
+        """Khôi phục trạng thái từ snapshot - Fixed version"""
+        try:
+            print(f"🔄 ===== STARTING STATE RESTORATION =====")
+            print(f"🔄 Snapshot contains keys: {list(snapshot.keys())}")
+            
+            # Restore basic attributes safely
+            if 'pc' in snapshot:
+                old_pc = getattr(self, 'pc', 0)
+                self.pc = snapshot['pc']
+                print(f"🔄 PC: 0x{old_pc:X} → 0x{self.pc:X}")
+            
+            # Restore display attributes
+            restore_attrs = ['pc', 'memory_data', 'registers', 'current_instr_addr_for_display', 'current_instr_str_for_display', 'micro_step_index', 'execution_finished', 'is_running', 'execution_stage_name', 'label_table']
+            for attr_name in restore_attrs:
+                if attr_name in snapshot:
+                    old_value = getattr(self, attr_name, 'N/A')
+                    # if attr_name == 'memory_data':
+                    #     old_value = old_value['data_memory']
+                    new_value = snapshot[attr_name]
+                    setattr(self, attr_name, new_value)
+                    print(f"🔄 {attr_name}: {old_value} → {new_value}")
+            
+            # Handle micro_step_index with detailed logging
+            if 'micro_step_index' in snapshot:
+                if hasattr(self, 'micro_step_index_internal'):
+                    old_index = self.micro_step_index_internal
+                    self.micro_step_index_internal = snapshot['micro_step_index']
+                    print(f"🔄 micro_step_index_internal: {old_index} → {self.micro_step_index_internal}")
+                else:
+                    old_index = getattr(self, 'micro_step_index', -1)
+                    self.micro_step_index = snapshot['micro_step_index']
+                    print(f"🔄 micro_step_index: {old_index} → {self.micro_step_index}")
+            
+            # Handle registers restoration properly with detailed logging
+            if 'registers' in snapshot:
+                registers_data = snapshot['registers']
+                # print(f"🔄 Restoring {len(registers_data)} registers from snapshot")
+                # print(f"🔄 Sample register data: {list(registers_data.items())[:3]}")  # Show first 3 registers
+                
+                if hasattr(self, 'registers') and self.registers:
+                    # Check what methods are available on register file
+                    register_methods = [method for method in dir(self.registers) if not method.startswith('_')]
+                    print(f"🔄 Available register methods: {register_methods}")
+                    self.registers = registers_data
+                    # if hasattr(self.registers, 'restore_all_registers'):
+                    #     print("🔄 Using restore_all_registers method")
+                    #     self.registers.restore_all_registers(registers_data)
+                    # elif hasattr(self.registers, 'set_all_registers'):
+                    #     print("🔄 Using set_all_registers method")
+                    #     self.registers.set_all_registers(registers_data)
+                    # else:
+                    #     print("🔄 Using manual register restoration")
+                    #     # Manual restoration - iterate through register data
+                    #     restored_count = 0
+                    #     for reg_name, reg_value in registers_data.items():
+                    #         try:
+                    #             # Show BEFORE value
+                    #             old_value = self.registers.read(reg_name) if hasattr(self.registers, 'read') else 'N/A'
+                    #             print(f"🔄 BEFORE: {reg_name} = 0x{old_value:X}" if isinstance(old_value, int) else f"🔄 BEFORE: {reg_name} = {old_value}")
+                                
+                    #             # Convert value to int if needed
+                    #             if isinstance(reg_value, str) and reg_value.startswith('0x'):
+                    #                 reg_value = int(reg_value, 16)
+                    #             elif isinstance(reg_value, str):
+                    #                 reg_value = int(reg_value)
+                    #             elif not isinstance(reg_value, int):
+                    #                 reg_value = int(reg_value)
+                                
+                    #             # Write to register using the standard write method
+                    #             self.registers.write(reg_name, reg_value)
+                                
+                    #             # Show AFTER value
+                    #             new_value = self.registers.read(reg_name) if hasattr(self.registers, 'read') else 'N/A'
+                    #             print(f"🔄 AFTER:  {reg_name} = 0x{new_value:X} (restored from 0x{reg_value:X})")
+                                
+                    #             restored_count += 1
+                    #         except Exception as e:
+                    #             print(f"⚠️ Could not restore register {reg_name} (value: {reg_value}): {e}")
+                        
+                        # print(f"🔄 Successfully restored {restored_count}/{len(registers_data)} registers")
+                print(f"🔄 Registers restoration completed")
+            
+            # Restore memory data
+            if 'memory_data' in snapshot and snapshot['memory_data']:
+                print(f"🔄 Restoring memory data...")
+                memory_data = snapshot['memory_data']
+                print(f"🔄 Memory backup contains: {list(memory_data.keys())}")
+                
+                # Show some memory data before restore
+                if hasattr(self, 'data_memory') and self.data_memory:
+                    current_memory = self.data_memory.get_display_dict()
+                    print(f"🔄 BEFORE memory restore: {len(current_memory)} entries")
+                    if current_memory:
+                        sample_entries = list(current_memory.items())[:3]
+                        for addr, value in sample_entries:
+                            print(f"🔄 BEFORE: Mem[{addr}] = {value}")
+                
+                #self.restore_memory_backup(snapshot['memory_data'])
+                self.data_memory = snapshot['memory_data']['data_memory']
+                # Show memory data after restore
+                if hasattr(self, 'data_memory') and self.data_memory:
+                    restored_memory = self.data_memory.get_display_dict()
+                    print(f"🔄 AFTER memory restore: {len(restored_memory)} entries")
+                    if restored_memory:
+                        sample_entries = list(restored_memory.items())[:3]
+                        for addr, value in sample_entries:
+                            print(f"🔄 AFTER: Mem[{addr}] = {value}")
+            else:
+                print(f"🔄 No memory data to restore")
+            
+            # Restore other attributes
+            restore_attrs = ['current_instr_addr_for_display', 'current_instr_str_for_display', 
+                           'execution_finished', 'execution_stage_name']
+            for attr_name in restore_attrs:
+                if attr_name in snapshot:
+                    setattr(self, attr_name, snapshot[attr_name])
+            
+            # Handle micro_step_index
+            if 'micro_step_index' in snapshot:
+                if hasattr(self, 'micro_step_index_internal'):
+                    self.micro_step_index_internal = snapshot['micro_step_index']
+                else:
+                    self.micro_step_index = snapshot['micro_step_index']
+            
+            # Reset state for return back
+            self.simulation_loaded = True
+            self.error_state = None
+            if hasattr(self, 'current_instruction_generator'):
+                self.current_instruction_generator = None
+            if hasattr(self, 'instruction_completed_flag'):
+                self.instruction_completed_flag = False
+            
+            # Restore label table
+            if 'label_table' in snapshot and hasattr(self, 'label_table'):
+                self.label_table = snapshot['label_table'].copy()
+                
+            print(f"🔄 ===== STATE RESTORATION COMPLETED =====")
+            print(f"🔄 Final PC: 0x{self.pc:X}")
+            print(f"🔄 Final instruction: {getattr(self, 'current_instr_str_for_display', 'N/A')}")
+            print(f"🔄 Final micro step: {getattr(self, 'micro_step_index_internal', -1)}")
+            
+            # Show final register sample
+            if hasattr(self, 'registers') and self.registers:
+                print(f"🔄 Final register sample:")
+                try:
+                    for reg_name in ['X0', 'X1', 'X2', 'SP']:
+                        if hasattr(self.registers, 'read'):
+                            reg_val = self.registers.read(reg_name)
+                            print(f"🔄   {reg_name}: 0x{reg_val:X}")
+                except:
+                    print(f"🔄   (Could not read sample registers)")
+            
+            # QUAN TRỌNG: Force cập nhật lại tất cả state sau restore
+            print(f"🔄 Forcing state refresh after restore...")
+            
+        except Exception as e:
+            print(f"❌ ERROR restoring state snapshot: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+
+    def return_back(self):
+        """Wrapper for instruction-level return back"""
+        return self.return_back_to_previous_instruction()
+
+    def return_back_to_previous_instruction(self):
+        """Trở lại instruction trước đó (về đầu instruction, không phải micro step)"""
+        try:
+            print(f"🔙 Return back to previous instruction requested. Current history: {self.current_history_index}/{len(self.state_history)-1}")
+            
+            if not self.can_return_back():
+                print(f"🔙 Cannot return back - no previous instruction available")
+                return {
+                    "status": "error",
+                    "message": "Cannot return back - no previous instruction available"
+                }
+                
+            # Di chuyển về instruction trước đó (mỗi snapshot = 1 instruction)
+            previous_index = self.current_history_index
+            
+            snapshot = self.state_history[self.current_history_index]
+            self.current_history_index -= 1
+            print(f"🔙 Moving from instruction {previous_index} to instruction {self.current_history_index}")
+            print(f"🔙 Restoring to beginning of instruction with PC: 0x{snapshot.get('pc', 0):X}")
+            print(f"🔙 Target instruction: {snapshot.get('current_instr_str_for_display', 'N/A')}")
+            
+            # Khôi phục trạng thái về đầu instruction
+            self._restore_state_snapshot_fixed(snapshot)
+            
+            # ĐẶT LẠI VỀ TRẠNG THÁI ĐẦU INSTRUCTION
+            self.micro_step_index_internal = -1  # Reset về trước micro step đầu tiên
+            self.instruction_completed_flag = False
+            self.current_instruction_generator = None  # Reset generator
+            
+            print(f"🔙 Reset to beginning of instruction - micro step index: {self.micro_step_index_internal}")
+            
+            # Force refresh CPU state after restore
+            print(f"🔙 Getting fresh CPU state after restore...")
+            fresh_cpu_state = self.get_cpu_state_for_api()
+            
+            result = {
+                "status": "success",
+                "message": f"Returned to beginning of previous instruction (instruction {self.current_history_index + 1}/{len(self.state_history)})",
+                "cpu_state": fresh_cpu_state,
+                "current_instr_addr": f"0x{self.current_instr_addr_for_display:X}",
+                "current_instr_str": self.current_instr_str_for_display,
+                "micro_step_info": f"Ready to start instruction (0/5)",
+                "can_return_back": self.can_return_back(),
+                "step_data": {
+                    "current_instruction_address": self.current_instr_addr_for_display,
+                    "current_instruction_string": self.current_instr_str_for_display,
+                    "micro_step_index": -1,
+                    "stage": "Ready",
+                    "active_blocks": [],
+                    "active_paths": [],
+                    "control_signals": {}
+                }
+            }
+            
+            print(f"🔙 Return back successful. At beginning of instruction. Can return back again: {self.can_return_back()}")
+            return result
+            
+        except Exception as e:
+            print(f"Error in return_back: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "status": "error",
+                "message": f"Error returning to previous instruction: {str(e)}"
             }

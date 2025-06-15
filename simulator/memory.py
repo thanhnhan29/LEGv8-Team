@@ -58,3 +58,40 @@ class Memory:
     def set_raw_memory(self, mem_dict):
         """Sets internal memory from a given dictionary (used for state restoration)."""
         self.memory = mem_dict.copy()
+
+    def get_all_memory_data(self):
+        """Trả về toàn bộ dữ liệu memory để backup"""
+        return {
+            'instruction_memory': getattr(self, 'instruction_memory', {}).copy(),
+            'data_memory': getattr(self, 'data_memory', {}).copy()
+        }
+        
+    def load_from_dict(self, memory_data):
+        """Khôi phục memory từ dictionary"""
+        if 'instruction_memory' in memory_data:
+            self.instruction_memory = memory_data['instruction_memory'].copy()
+        if 'data_memory' in memory_data:
+            self.data_memory = memory_data['data_memory'].copy()
+    
+    def get_raw_memory(self):
+        """Trả về raw memory data để backup - compatible với memory objects"""
+        if hasattr(self, 'memory') and isinstance(self.memory, dict):
+            return self.memory.copy()
+        elif hasattr(self, 'data_memory') and isinstance(self.data_memory, dict):
+            return self.data_memory.copy()
+        elif hasattr(self, 'instruction_memory') and isinstance(self.instruction_memory, dict):
+            return self.instruction_memory.copy()
+        else:
+            return {}
+    
+    def set_raw_memory(self, memory_data):
+        """Khôi phục raw memory data - compatible với memory objects"""
+        if hasattr(self, 'memory') and isinstance(self.memory, dict):
+            self.memory.clear()
+            self.memory.update(memory_data)
+        elif hasattr(self, 'data_memory') and isinstance(self.data_memory, dict):
+            self.data_memory.clear()
+            self.data_memory.update(memory_data)
+        elif hasattr(self, 'instruction_memory') and isinstance(self.instruction_memory, dict):
+            self.instruction_memory.clear()
+            self.instruction_memory.update(memory_data)

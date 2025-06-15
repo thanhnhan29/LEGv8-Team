@@ -66,9 +66,41 @@ class RegisterFile:
         return dict(sorted(regs_display.items(), key=reg_sort_key))
 
     def get_all_registers(self):
-        """Returns a copy of the internal registers dictionary."""
-        return self.registers.copy()
-
-    def set_all_registers(self, regs_dict):
-        """Sets internal registers from a given dictionary (used for state restoration)."""
-        self.registers = regs_dict.copy()
+        """Trả về dictionary của tất cả registers để backup"""
+        register_dict = {}
+        
+        # Backup X0-X30 registers
+        if hasattr(self, 'x_registers'):
+            register_dict['x_registers'] = self.x_registers.copy() if isinstance(self.x_registers, dict) else list(self.x_registers)
+        
+        # Backup special registers
+        if hasattr(self, 'sp'):
+            register_dict['sp'] = self.sp
+        if hasattr(self, 'fp'):
+            register_dict['fp'] = self.fp
+        if hasattr(self, 'lr'):
+            register_dict['lr'] = self.lr
+        if hasattr(self, 'xzr'):
+            register_dict['xzr'] = self.xzr
+            
+        # Backup any other attributes that might be registers
+        for attr_name in dir(self):
+            if not attr_name.startswith('_') and not callable(getattr(self, attr_name)):
+                attr_value = getattr(self, attr_name)
+                if attr_name not in register_dict and isinstance(attr_value, (int, float, str)):
+                    register_dict[attr_name] = attr_value
+                    
+        return register_dict
+    
+    def restore_all_registers(self, register_dict):
+        """Khôi phục tất cả registers từ dictionary"""
+        for attr_name, attr_value in register_dict.items():
+            if hasattr(self, attr_name):
+                if attr_name == 'x_registers' and hasattr(self, 'x_registers'):
+                    if isinstance(self.x_registers, dict):
+                        self.x_registers.clear()
+                        self.x_registers.update(attr_value)
+                    elif isinstance(self.x_registers, list):
+                        self.x_registers[:] = attr_value
+                else:
+                    setattr(self, attr_name, attr_value)

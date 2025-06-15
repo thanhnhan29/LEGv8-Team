@@ -390,6 +390,7 @@
   );
   const resetButton = document.getElementById("reset-button");
   const runPauseButton = document.getElementById("run-pause-button");
+  const returnBackButton = document.getElementById("return-back-button");
   const codeEditor = document.getElementById("code-editor");
   const codeDisplay = document.getElementById("code-display");
   const currentInstrDisplay = document.getElementById("current-instr-display");
@@ -764,6 +765,7 @@
   let currentInstructionAddr = -1;
   let currentInstructionStr = "N/A";
   let animationSpeed = 5.0; // Default animation speed in seconds (5s)
+  let canReturnBack = false; // NEW: Track if return back is available
 
   // NEW: Text animation tracking for cleanup
   let currentInstructionTextElements = new Set(); // Track text elements of current instruction
@@ -2155,7 +2157,7 @@ end:
   }
 
   function setSimulationState(loaded, running = false, error = null) {
-    /* Unchanged */
+    /* Updated to include Return Back button handling */
     simulationLoaded = loaded;
     isRunning = running;
     microStepButton.disabled = !loaded || running || !!error;
@@ -2164,6 +2166,12 @@ end:
     resetButton.disabled = running;
     loadProgramButton.disabled = running;
     uploadFileButton.disabled = running;
+
+    // Update Return Back button
+    if (returnBackButton) {
+      returnBackButton.disabled =
+        !loaded || running || !!error || !canReturnBack;
+    }
 
     if (error) {
       runPauseButton.textContent = "Run";
@@ -2263,6 +2271,12 @@ end:
           updateMicroStepDisplay(currentMicroStepIndex, step.stage);
           applyHighlightsAndAnimations(step);
         }
+
+        // NEW: Update return back availability from response
+        if (data.can_return_back !== undefined) {
+          canReturnBack = data.can_return_back;
+        }
+
         if (data.status === "success") {
           stepStatus = "micro_step_ok";
         } else if (
@@ -2479,6 +2493,105 @@ end:
     if (simulationLoaded && !isRunning) {
       setSimulationState(true, false);
     }
+  }
+
+  // NEW: Handle Return Back functionality
+  async function handleReturnBack() {
+    if (!simulationLoaded || isRunning || !canReturnBack) return;
+
+    try {
+      // Disable all buttons during operation
+      setAllButtonsDisabled(true);
+      updateStatus("Returning to previous state...");
+
+      const response = await fetch("/api/return_back", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        updateLog(data.message || "Returned to previous state");
+
+        // Update UI with restored state
+        if (data.cpu_state) {
+          updateCpuStateTabs(data.cpu_state);
+          console.log("✅ CPU state updated after return back");
+        }
+
+        // Update current instruction display
+        if (data.current_instr_addr && data.current_instr_str) {
+          const addr = parseAddress(data.current_instr_addr);
+          if (!isNaN(addr)) {
+            currentInstructionAddr = addr;
+            currentInstructionStr = data.current_instr_str;
+            updateCurrentInstructionDisplay(
+              currentInstructionAddr,
+              currentInstructionStr
+            );
+          }
+        }
+
+        // Update micro-step display
+        if (data.micro_step_info) {
+          microStepDisplay.textContent = data.micro_step_info;
+        }
+
+        // Update return back availability
+        canReturnBack = data.can_return_back || false;
+
+        // Apply any step data if available
+        if (data.step_data) {
+          applyHighlightsAndAnimations(data.step_data);
+        }
+
+        updateStatus("Successfully returned to previous state");
+      } else {
+        const errorMsg =
+          data.message || `Return back failed: ${response.status}`;
+        updateLog(`Error: ${errorMsg}`);
+        updateStatus(errorMsg, true);
+      }
+    } catch (error) {
+      console.error("Return back error:", error);
+      const errorMsg = `Return back failed: ${error.message}`;
+      updateLog(errorMsg);
+      updateStatus(errorMsg, true);
+    } finally {
+      // Re-enable buttons
+      setAllButtonsDisabled(false);
+      updateButtonStates();
+    }
+  }
+
+  // NEW: Helper function to disable/enable all buttons
+  function setAllButtonsDisabled(disabled) {
+    if (microStepButton) microStepButton.disabled = disabled;
+    if (fullInstructionButton) fullInstructionButton.disabled = disabled;
+    if (runPauseButton) runPauseButton.disabled = disabled;
+    if (resetButton) resetButton.disabled = disabled;
+    if (loadProgramButton) loadProgramButton.disabled = disabled;
+    if (uploadFileButton) uploadFileButton.disabled = disabled;
+    if (returnBackButton) returnBackButton.disabled = disabled;
+  }
+
+  // NEW: Update button states based on simulation state
+  function updateButtonStates() {
+    if (returnBackButton) {
+      returnBackButton.disabled =
+        !simulationLoaded || isRunning || !canReturnBack;
+    }
+
+    // Update other buttons based on existing logic
+    if (microStepButton)
+      microStepButton.disabled = !simulationLoaded || isRunning;
+    if (fullInstructionButton)
+      fullInstructionButton.disabled = !simulationLoaded || isRunning;
+    if (runPauseButton) runPauseButton.disabled = !simulationLoaded;
+    if (resetButton) resetButton.disabled = isRunning;
+    if (loadProgramButton) loadProgramButton.disabled = isRunning;
+    if (uploadFileButton) uploadFileButton.disabled = isRunning;
   }
   // --- End Helper Functions ---
   const debugSvgButton = document.createElement("button");
@@ -2787,6 +2900,10 @@ end:
           currentInstructionStr
         );
         updateMicroStepDisplay(-1, "Fetch");
+
+        // Initialize return back state
+        canReturnBack = data.can_return_back || false;
+
         setSimulationState(true, false);
       } else {
         updateLog(
@@ -2832,6 +2949,11 @@ end:
   });
 
   microStepButton.addEventListener("click", performMicroStep); /* Unchanged */
+
+  // NEW: Return Back button event listener
+  if (returnBackButton) {
+    returnBackButton.addEventListener("click", handleReturnBack);
+  }
 
   fullInstructionButton.addEventListener("click", async () => {
     /* Unchanged */
@@ -2881,6 +3003,10 @@ end:
           currentInstructionStr
         );
         updateMicroStepDisplay(-1, "Idle");
+
+        // Reset return back state
+        canReturnBack = data.can_return_back || false;
+
         setSimulationState(false, false);
         updateLog(data.message || "Simulator reset successfully.");
       } else {
