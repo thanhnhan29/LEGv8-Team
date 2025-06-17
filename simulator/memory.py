@@ -1,5 +1,4 @@
-﻿# -*- coding: utf-8 -*-
-
+﻿
 class Memory:
     def __init__(self, memory_type="data"):
         self.memory = {}

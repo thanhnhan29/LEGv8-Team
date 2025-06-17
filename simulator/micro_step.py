@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+﻿
 
 class MicroStepState:
     """ Represents the state of the datapath at a specific micro-step for visualization. """

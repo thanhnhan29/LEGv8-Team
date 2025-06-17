@@ -66,7 +66,6 @@ class RegisterFile:
         return dict(sorted(regs_display.items(), key=reg_sort_key))
 
     def get_all_registers(self):
-        """Trả về dictionary của tất cả registers để backup"""
         register_dict = {}
         
         # Backup X0-X30 registers

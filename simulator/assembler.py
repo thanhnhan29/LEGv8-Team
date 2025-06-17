@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+﻿
 import re
 CB_FORMAT = ["CBZ", "CBNZ"]
 class Assembler:

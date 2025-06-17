@@ -19,27 +19,29 @@ class SimulatorEngine:
         self.pc = 0
         self.registers = RegisterFile()
         self.data_memory = Memory(memory_type="data")
-        self.instruction_memory = Memory(memory_type="instruction") # Holds processed instructions
-        self.raw_instruction_memory = Memory(memory_type="instruction") # Holds original user strings
-        self.binary_instruction_memory = Memory(memory_type="instruction") # NEW: Holds binary representations
-        self.label_table = {} # label_name -> address
+        self.instruction_memory = Memory(memory_type="instruction")  # Processed instructions ready for execution
+        self.raw_instruction_memory = Memory(memory_type="instruction")  # Original user input strings for display
+        self.binary_instruction_memory = Memory(memory_type="instruction")  # Binary representations for visualization
+        self.label_table = {}  # Maps label names to addresses
 
         self.control_unit = ControlUnit()
-        # ALU is stateless, can call ALU.execute directly
+        # ALU is stateless - call ALU.execute() directly
 
         self.current_instruction_generator = None
         self.simulation_loaded = False
         self.error_state = None
         
-        self.current_instr_addr_for_display = -1 # For API to know what was loaded/is about to run
-        self.current_instr_str_for_display = ""  # For API
+        # Display state for API
+        self.current_instr_addr_for_display = -1  # Current instruction address for API
+        self.current_instr_str_for_display = ""   # Current instruction string for API
         
-        self.micro_step_index_internal = -1      # Tracks micro-step within current instruction execution
-        self.instruction_completed_flag = False  # Set when an instruction finishes all its micro-steps
+        # Micro-step execution state
+        self.micro_step_index_internal = -1       # Tracks micro-step within current instruction
+        self.instruction_completed_flag = False   # Set when instruction finishes all micro-steps
 
-        # NEW: State history system for return back functionality
-        self.state_history = []  # Store state snapshots
-        self.max_history_size = 100  # Limit number of snapshots  
+        # State history system for return back functionality
+        self.state_history = []          # Store state snapshots
+        self.max_history_size = 100      # Limit number of snapshots  
         self.current_history_index = -1  # Current position in history
 
         self.initialize_state()
@@ -98,7 +100,6 @@ class SimulatorEngine:
             
         self.state_history.clear()
         self.current_history_index = -1
-        #self._save_state_snapshot()
 
     def load_program_data(self, processed_instr_dict, raw_instr_dict, labels_dict, binary_instr_dict=None):
         """
@@ -173,7 +174,7 @@ class SimulatorEngine:
         Note:
             Register names are displayed in priority order: SP, FP, LR, XZR, X0-X27
         """
-        # Define the order of display names for registers
+        # Display the order of register names for the API
         special_priority_aliases = ["SP", "FP", "LR"]
         other_special_regs = ["XZR"]
         # General purpose registers X0-X27 (X28, X29, X30 are covered by SP, FP, LR)
@@ -874,7 +875,6 @@ class SimulatorEngine:
             if self.instruction_completed_flag:
                 print("--- Transitioning to next instruction ---")
                 
-                # QUAN TRỌNG: Save snapshot khi instruction hoàn thành, trước khi move to next
                 print(f"📸 Instruction completed - preparing for next instruction")
                 
                 self.instruction_completed_flag = False
@@ -1016,10 +1016,10 @@ class SimulatorEngine:
         """Lưu snapshot trạng thái hiện tại vào lịch sử"""
         print("sdf")
         try:
-            # CHỈ lưu snapshot ở ĐẦUE instruction (micro step = -1 hoặc 0)
+            
             current_micro_step = getattr(self, 'micro_step_index_internal', -1)
             
-            # Chỉ save khi bắt đầu instruction mới (trước micro step đầu tiên)
+            
             if current_micro_step >0:
                 print(f"📸 Skipping snapshot save - in middle of instruction (micro step {current_micro_step})")
                 return
@@ -1235,7 +1235,6 @@ class SimulatorEngine:
         """Helper method to backup memory data from various possible attributes"""
         memory_backup = {}
         
-        # Backup data_memory (chính)
         if hasattr(self, 'data_memory') and self.data_memory:
             memory_backup['data_memory'] = copy.deepcopy(self.data_memory)
         

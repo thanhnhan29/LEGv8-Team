@@ -1,6 +1,4 @@
-﻿# -*- coding: utf-8 -*-
-
-# --- Các Khối Phần Cứng Mô Phỏng ---
+﻿
 def pc_plus_4_adder(current_pc):
     return (current_pc + 4) & 0xFFFFFFFFFFFFFFFF
 

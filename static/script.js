@@ -376,7 +376,7 @@
   `;
   document.head.appendChild(highlightStyles);
 
-  // --- Constants (Unchanged) ---
+  // --- Constants for 64-bit arithmetic ---
   const BITS_64 = 64n;
   const SIGN_BIT_64_MASK = 1n << (BITS_64 - 1n);
   const MAX_UNSIGNED_64 = (1n << BITS_64) - 1n;
@@ -754,7 +754,7 @@
     "control-signals-display"
   );
 
-  // --- Simulation State (Frontend - Unchanged) ---
+  // --- Simulation State Variables ---
   let svgDoc = null;
   let highlightedElements = new Set();
   let highlightedLineElement = null;
@@ -765,9 +765,9 @@
   let currentInstructionAddr = -1;
   let currentInstructionStr = "N/A";
   let animationSpeed = 5.0; // Default animation speed in seconds (5s)
-  let canReturnBack = false; // NEW: Track if return back is available
+  let canReturnBack = false; // Track if return back is available
 
-  // NEW: Text animation tracking for cleanup
+  // Text animation tracking for cleanup
   let currentInstructionTextElements = new Set(); // Track text elements of current instruction
   let allPersistentTextElements = new Set(); // Track all text elements globally
   let lastInstructionAddr = null; // Track when instruction changes
@@ -783,7 +783,7 @@
     "ALUOp",
   ];
 
-  // --- Initial Code (Unchanged) ---
+  // --- Initial Code ---
   codeEditor.value = `
 // LEGv8 demo program using full instruction set
 
@@ -822,7 +822,7 @@ loop:
 end:
   `;
 
-  // --- GSAP Registration (Unchanged) ---
+  // --- GSAP Registration ---
   gsap.registerPlugin(MotionPathPlugin);
   console.log("GSAP and MotionPathPlugin registered.");
 
@@ -3064,7 +3064,7 @@ end:
     });
   }
 
-  // --- MODIFIED Tab Switching Logic ---
+  // Tab Switching Logic
   // Select ALL tab buttons from both panels
   const allTabButtons = document.querySelectorAll(".tab-button");
 

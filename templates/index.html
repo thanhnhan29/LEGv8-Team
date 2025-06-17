@@ -305,15 +305,15 @@
       /* --- Center Column --- */
       #center-column {
         flex: 1 1 auto;
-        flex-direction: row; /* MODIFIED: Children will be in a row */
+        flex-direction: row; /* Children will be in a row */
         /* Inherits display:flex, height:100%, gap:10px from .column */
       }
       #datapath-panel {
-        /* flex-grow: 1; (original) */
-        flex: 1 1 auto; /* MODIFIED: Let it grow and shrink */
+        /* Let it grow and shrink */
+        flex: 1 1 auto;
         min-height: 0;
         overflow: hidden;
-        min-width: 0; /* ADDED: Allow it to shrink properly */
+        min-width: 0; /* Allow it to shrink properly */
       }
       #datapath-area {
         height: 100%;
@@ -441,18 +441,18 @@
         flex-grow: 1;
         flex-shrink: 1;
         flex-basis: 0;
-        min-height: 0; /* Quan trọng! */
-        overflow: hidden; /* Quan trọng! Cắt mọi thứ tràn ra khỏi panel */
+        min-height: 0; /* Important for flex shrinking */
+        overflow: hidden; /* Important! Prevent content overflow */
       }
 
       .tabs-container {
         display: flex;
         flex-direction: column;
-        /* height: 100%; */ /* <-- Xóa hoặc ghi chú dòng này */
-        flex-grow: 1; /* <-- Thêm dòng này */
-        min-height: 0; /* <-- Thêm dòng này để đảm bảo co giãn đúng trong flex */
+        /* height: 100%; */ /* Removed - interferes with flex layout */
+        flex-grow: 1; /* Added for proper flex growth */
+        min-height: 0; /* Added for proper flex shrinking */
         width: 100%;
-        overflow: hidden; /*Không cần thiết lắm nếu .tab-content có overflow */
+        overflow: hidden; /* Not critical if .tab-content has overflow */
       }
 
       .tab-buttons {
@@ -481,10 +481,10 @@
         font-family: monospace;
         white-space: pre;
         font-size: 0.85em;
-        flex-grow: 1; /* Lấp đầy không gian dọc còn lại */
-        min-height: 0; /* Quan trọng! Cho phép co lại */
-        overflow-y: auto; /* Cuộn dọc NẾU nội dung cao hơn */
-        overflow-x: auto; /* Cuộn ngang NẾU nội dung rộng hơn */
+        flex-grow: 1; /* Take up remaining vertical space */
+        min-height: 0; /* Important! Allow shrinking */
+        overflow-y: auto; /* Vertical scroll if content is taller */
+        overflow-x: auto; /* Horizontal scroll if content is wider */
         padding: 5px;
         border: 1px solid #eee;
         border-radius: 0 0 4px 4px;
