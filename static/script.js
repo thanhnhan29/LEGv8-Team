@@ -128,7 +128,7 @@
         case_insensitive: true,
         keywords: {
           keyword:
-            "ADD SUB AND ORR EOR LSL LSR ASR ADDI SUBI ANDI ORRI EORI LDUR STUR CBZ CBNZ B BEQ BNE BLT BLE BGT BGE BR MUL DIV MOVZ MOVK NOP",
+            "ADD ADDS SUB SUBS AND ORR EOR LSL LSR ASR ADDI SUBI ANDI ORRI EORI LDUR STUR CBZ CBNZ B BEQ BNE BLT BLE BGT BGE BR MUL DIV MOVZ MOVK NOP",
           built_in:
             "X0 X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14 X15 X16 X17 X18 X19 X20 X21 X22 X23 X24 X25 X26 X27 X28 FP LR SP XZR",
         },
@@ -767,10 +767,88 @@
   let animationSpeed = 5.0; // Default animation speed in seconds (5s)
   let canReturnBack = false; // Track if return back is available
 
+  // --- Persistent Flags State ---
+  let persistentFlags = {
+    N: 0, // Negative flag
+    Z: 0, // Zero flag
+    C: 0, // Carry flag
+    V: 0, // Overflow flag
+  };
+
   // Text animation tracking for cleanup
   let currentInstructionTextElements = new Set(); // Track text elements of current instruction
   let allPersistentTextElements = new Set(); // Track all text elements globally
   let lastInstructionAddr = null; // Track when instruction changes
+
+  // --- Persistent Flags Management Functions ---
+  function updatePersistentFlags(newFlags) {
+    if (!newFlags) return;
+
+    // Update local flags state
+    if (newFlags.N !== undefined) persistentFlags.N = newFlags.N;
+    if (newFlags.Z !== undefined) persistentFlags.Z = newFlags.Z;
+    if (newFlags.C !== undefined) persistentFlags.C = newFlags.C;
+    if (newFlags.V !== undefined) persistentFlags.V = newFlags.V;
+
+    console.log(
+      `🚩 Flags updated: N=${persistentFlags.N} Z=${persistentFlags.Z} C=${persistentFlags.C} V=${persistentFlags.V}`
+    );
+
+    // Apply visual updates to SVG
+    applyPersistentFlagsToSvg();
+  }
+
+  function applyPersistentFlagsToSvg() {
+    if (!svgDoc) return;
+
+    // Update each flag block based on its current state
+    const flagBlocks = [
+      { id: "block-N", flag: persistentFlags.N },
+      { id: "block-Z", flag: persistentFlags.Z },
+      { id: "block-C", flag: persistentFlags.C },
+      { id: "block-V", flag: persistentFlags.V },
+    ];
+
+    flagBlocks.forEach(({ id, flag }) => {
+      const flagElement = svgDoc.getElementById(id);
+      if (flagElement) {
+        // Find the rect element within the group
+        const rectElement = flagElement.querySelector("rect");
+        if (rectElement) {
+          if (flag === 1) {
+            // Flag is set - use same highlight style as other blocks
+            rectElement.classList.add("block-highlight");
+            rectElement.style.fill = "rgba(233, 30, 99, 0.15)";
+            rectElement.style.stroke = "#e91e63";
+            rectElement.style.strokeWidth = "2";
+            console.log(`🚩 ${id} set to HIGH (highlighted like other blocks)`);
+          } else {
+            // Flag is clear - remove highlight and restore normal appearance
+            rectElement.classList.remove("block-highlight");
+            rectElement.style.fill = "url(#memoryGradient)";
+            rectElement.style.stroke = "#6C757D";
+            rectElement.style.strokeWidth = "1";
+            console.log(`🚩 ${id} set to LOW (normal)`);
+          }
+        }
+      }
+    });
+  }
+
+  function resetPersistentFlags() {
+    // Reset all flags to 0
+    persistentFlags = { N: 0, Z: 0, C: 0, V: 0 };
+    console.log(`🚩 All flags reset to 0`);
+
+    // Apply visual reset
+    applyPersistentFlagsToSvg();
+  }
+
+  function initializePersistentFlags() {
+    // Initialize flags from CPU state if available
+    resetPersistentFlags();
+    applyPersistentFlagsToSvg();
+  }
 
   const knownControlSignals = [
     "RegWrite",
@@ -781,6 +859,9 @@
     "Branch",
     "UncondBranch",
     "ALUOp",
+    "Reg2Loc",
+    "FlagWrite",
+    "FlagBranch",
   ];
 
   // --- Initial Code ---
@@ -869,9 +950,14 @@ end:
   }
 
   function updateCpuStateTabs(state) {
-    /* Unchanged - targets specific element IDs */
+    /* Enhanced with persistent flags handling */
     if (!state) {
       /* ... (rest of function is identical) ... */ return;
+    }
+
+    // --- Handle Flags Update ---
+    if (state.flags) {
+      updatePersistentFlags(state.flags);
     }
 
     // --- Registers Tab ---
@@ -1090,7 +1176,7 @@ end:
   }
 
   function resetAllSvgStyles() {
-    /* Reset highlights but keep persistent text animations */
+    /* Reset highlights but keep persistent flags and text animations */
     if (!svgDoc) {
       console.warn("resetAllSvgStyles: No SVG document available");
       return;
@@ -1115,6 +1201,17 @@ end:
       }
 
       elements.forEach((el) => {
+        // Skip flag blocks - they have persistent state
+        if (
+          el.id &&
+          (el.id === "block-N" ||
+            el.id === "block-Z" ||
+            el.id === "block-C" ||
+            el.id === "block-V")
+        ) {
+          return; // Don't reset flag blocks
+        }
+
         // Remove highlight classes
         el.classList.remove("path-highlight", "block-highlight");
 
@@ -1124,6 +1221,11 @@ end:
             "rect, path, circle, ellipse, line"
           );
           children.forEach((child) => {
+            // Skip flag block children
+            if (child.closest("#block-N, #block-Z, #block-C, #block-V")) {
+              return; // Don't reset flag block children
+            }
+
             child.classList.remove("path-highlight", "block-highlight");
             // Reset to original styles by removing inline styles
             child.style.stroke = "";
@@ -1143,11 +1245,27 @@ end:
       // Re-enable transitions after reset
       setTimeout(() => {
         elements.forEach((el) => {
+          // Skip flag blocks for transitions too
+          if (
+            el.id &&
+            (el.id === "block-N" ||
+              el.id === "block-Z" ||
+              el.id === "block-C" ||
+              el.id === "block-V")
+          ) {
+            return;
+          }
+
           if (el.tagName.toLowerCase() === "g") {
             const children = el.querySelectorAll(
               "rect, path, circle, ellipse, line"
             );
             children.forEach((child) => {
+              // Skip flag block children
+              if (child.closest("#block-N, #block-Z, #block-C, #block-V")) {
+                return;
+              }
+
               child.style.transition =
                 "stroke 0.15s linear, stroke-width 0.15s linear, fill 0.15s linear";
             });
@@ -1157,6 +1275,9 @@ end:
           }
         });
       }, 50);
+
+      // Reapply persistent flags after reset
+      applyPersistentFlagsToSvg();
     } catch (err) {
       console.error("Error in resetAllSvgStyles:", err);
     }
@@ -2825,6 +2946,9 @@ end:
       svgStatus.style.backgroundColor = "rgba(0,128,0,0.7)";
       console.log("SVG document accessed successfully");
 
+      // Initialize persistent flags after SVG loads
+      initializePersistentFlags();
+
       // List all elements with IDs
       const elementsWithId = svgDoc.querySelectorAll("[id]");
       console.log(`Total SVG elements with IDs: ${elementsWithId.length}`);
@@ -2873,6 +2997,7 @@ end:
     updateStatus("Loading and Resetting...");
     clearLog();
     clearAllTextAnimations(); // Clear text before loading new program
+    resetPersistentFlags(); // Reset flags to 0000 for new program
     resetAllSvgStyles();
     highlightLine(-1);
     populateCodeDisplay(code);
@@ -2984,6 +3109,7 @@ end:
     updateStatus("Resetting simulation...");
     clearLog();
     clearAllTextAnimations(); // Clear text before reset
+    resetPersistentFlags(); // Reset flags to 0000 for reset
     resetAllSvgStyles();
     highlightLine(-1);
     codeEditor.style.display = "block";

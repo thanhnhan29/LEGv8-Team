@@ -7,6 +7,8 @@ Contains both instruction-to-operation mappings and operation-to-control-bits ma
 ALU_OP_MAPPINGS = {
     # R-format instructions
     'ADD': 'add',
+    'ADDS': 'add',
+    'SUBS': 'sub', 
     'SUB': 'sub', 
     'AND': 'and',
     'ORR': 'orr',

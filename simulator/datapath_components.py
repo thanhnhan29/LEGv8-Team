@@ -39,6 +39,6 @@ def mux1(bit_20_16, bit_4_0, reg2loc):
     return bit_20_16 if reg2loc == 0 else bit_4_0
 
 # --- Logic Điều Khiển Nhánh ---
-def branch_control_logic(branch_signal, zero_flag, uncond_branch_signal):
-    pc_src = (branch_signal & zero_flag) | uncond_branch_signal
+def branch_control_logic(branch_signal, zero_flag, uncond_branch_signal, flag_branch = False, signal_4 = False):
+    pc_src = (branch_signal & zero_flag) | uncond_branch_signal | (flag_branch & signal_4)
     return pc_src

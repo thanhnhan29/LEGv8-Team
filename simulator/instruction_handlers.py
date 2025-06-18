@@ -85,36 +85,57 @@ def decode_b_format(parts):
             'read_reg1_addr': None, 'read_reg2_addr': None}
 
 # --- Execute Handlers ---
-def execute_alu_op(decoded_info, alu_input1, alu_input2):
-    """Generic ALU operation executor using centralized mapping"""
+def execute_alu_op(decoded_info, alu_input1, alu_input2, flags_register=None):
+    """Generic ALU operation executor using centralized mapping with flags support"""
     opcode = decoded_info['opcode']
     operation = get_alu_operation(opcode)
     if not operation:
         raise ValueError(f"Execute Error: ALU operation mapping missing for {opcode}")
-    alu_result, alu_zero_flag = ALU.execute(alu_input1, alu_input2, operation)
+    
+    # ALU trả về result, zero_flag và flags_data
+    alu_result, alu_zero_flag, flags_data = ALU.execute(alu_input1, alu_input2, operation)
+    
+    # Cập nhật flags register nếu có
+    if flags_register is not None:
+        flags_register.set_flags(
+            flags_data['N'], 
+            flags_data['Z'], 
+            flags_data['C'], 
+            flags_data['V']
+        )
+    
     log_msg = (f"  Execute: ALU Op='{operation}' "
                f"(In1=0x{int(alu_input1):X}, In2=0x{int(alu_input2):X}) -> "
-               f"Result=0x{alu_result:X}, Zero={alu_zero_flag}")
+               f"Result=0x{alu_result:X}, Flags=N:{flags_data['N']} Z:{flags_data['Z']} C:{flags_data['C']} V:{flags_data['V']}")
+    
     return {'log': log_msg,
-            'alu_result': alu_result, 'alu_zero_flag': alu_zero_flag}
+            'alu_result': alu_result, 
+            'alu_zero_flag': alu_zero_flag,
+            'flags_data': flags_data}
 
-def execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    return execute_alu_op(decoded_info, read_data1, read_data2)
+def execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
+    return execute_alu_op(decoded_info, read_data1, read_data2, flags_register)
 
-def execute_i_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    return execute_alu_op(decoded_info, read_data1, sign_ext_imm)
+def execute_i_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
+    return execute_alu_op(decoded_info, read_data1, sign_ext_imm, flags_register)
 
-def execute_d_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-    return execute_alu_op(decoded_info, read_data1, sign_ext_imm)
+def execute_d_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
+    return execute_alu_op(decoded_info, read_data1, sign_ext_imm, flags_register)
 
-def execute_cb_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
+def execute_cb_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
     rt_reg_name = decoded_info.get('rt', 'N/A')
     offset_val_in = decoded_info.get('branch_offset_val', 0) 
     offset_bits = decoded_info.get('branch_offset_bits', 0) 
 
     execute_log = f"  Execute: CBZ checking {rt_reg_name}=0x{read_data2:X}.\n"
-    _, alu_zero_flag = ALU.execute(0, read_data2, 'pass1')
-    execute_log += f"  Execute: ALU Zero Flag = {alu_zero_flag}.\n"
+    
+    # Sử dụng ALU với flags support
+    _, alu_zero_flag, flags_data = ALU.execute(0, read_data2, 'pass1')
+    execute_log += f"  Execute: ALU Zero Flag = {alu_zero_flag}, All Flags = N:{flags_data['N']} Z:{flags_data['Z']} C:{flags_data['C']} V:{flags_data['V']}.\n"
+
+    # Cập nhật flags nếu có flags_register
+    if flags_register is not None:
+        flags_register.set_flags(flags_data['N'], flags_data['Z'], flags_data['C'], flags_data['V'])
 
     branch_offset_extended = sign_extend(offset_val_in, offset_bits)
     execute_log += f"  Execute: Sign-extended branch offset = {branch_offset_extended} (0x{branch_offset_extended:X})\n"
@@ -123,11 +144,12 @@ def execute_cb_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm
     execute_log += f"  Execute: Branch Target Address (PC + Offset) = 0x{branch_target_addr:X}"
     
     return {'log': execute_log,
-            'alu_result': read_data2, # Pass Rt value for potential other uses, though not typical for CBZ ALU result
+            'alu_result': read_data2,
             'alu_zero_flag': alu_zero_flag,
+            'flags_data': flags_data,
             'branch_target_addr': branch_target_addr}
 
-def execute_b_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
+def execute_b_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
     execute_log = "  Execute: B instruction - ALU not used.\n"
     branch_offset_extended = sign_extend(decoded_info['branch_offset_val'], decoded_info['branch_offset_bits'])
     branch_target_addr = branch_target_adder(current_pc, branch_offset_extended)
@@ -135,21 +157,24 @@ def execute_b_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm,
 
     return {'log': execute_log,
             'alu_result': 0, 
-            'alu_zero_flag': 0, 
+            'alu_zero_flag': 0,
+            'flags_data': {'N': 0, 'Z': 0, 'C': 0, 'V': 0},  # No flags change for branch
             'branch_target_addr': branch_target_addr}
 
-def execute_nop(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
-     return {'log': "  Execute: NOP - No operation performed.", 'alu_result': 0, 'alu_zero_flag': 0}
+def execute_nop(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
+     return {'log': "  Execute: NOP - No operation performed.", 
+             'alu_result': 0, 
+             'alu_zero_flag': 0,
+             'flags_data': {'N': 0, 'Z': 0, 'C': 0, 'V': 0}}
 
-def execute_mul(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
+def execute_mul(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
     """Executes MUL (R-format multiplication). Shared with execute_r_type logic."""
-    return execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc)
+    return execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register)
 
-
-def execute_div(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc):
+def execute_div(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register=None):
     """Executes DIV (R-format division). Shared with execute_r_type logic but handles exception."""
     try:
-        return execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc)
+        return execute_r_type(decoded_info, controls, read_data1, read_data2, sign_ext_imm, current_pc, flags_register)
     except ValueError as e: # Catch division by zero from ALU
          log_msg = (f"  Execute: ALU Op='div' "
                     f"(Dividend=0x{int(read_data1):X}, Divisor=0x{int(read_data2):X}) -> "
@@ -207,8 +232,11 @@ def writeback_noop(decoded_info, controls, alu_result, data_read_from_mem):
 # --- Instruction Handler Dispatch Table ---
 INSTRUCTION_HANDLERS = {
     'ADD':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'ADDS':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result, 'setflag': True},
     'SUB':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'SUBS':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result, 'setflag': True},
     'AND':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
+    'ANDS':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result, 'setflag': True},
     'ORR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     'EOR':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
     #'MUL':  {'decode': decode_r_format,      'execute': execute_r_type,   'memory': memory_noop,   'writeback': writeback_alu_result},
@@ -226,7 +254,14 @@ INSTRUCTION_HANDLERS = {
     'STUR': {'decode': decode_d_format_store,'execute': execute_d_type,   'memory': memory_write,  'writeback': writeback_noop},
     
     'CBZ':  {'decode': decode_cb_format,     'execute': execute_cb_type,  'memory': memory_noop,   'writeback': writeback_noop},
+    # 'B.EQ':  {'decode': decode_cb_format,     'execute': execute_cb_type,  'memory': memory_noop,   'writeback': writeback_noop},
     'CBNZ':  {'decode': decode_cb_format,     'execute': execute_cb_type,  'memory': memory_noop,   'writeback': writeback_noop},
     'B':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.EQ':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.NE':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.LT':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.LO':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.LE':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.LS':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
     # 'NOP':  {'decode': decode_nop,           'execute': execute_nop,      'memory': memory_noop,   'writeback': writeback_noop},
 }

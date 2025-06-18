@@ -59,6 +59,21 @@
             refX="5" refY="2" orient="auto" fill="#888" viewBox="0 0 6 4">
       <polygon points="0 0, 6 2, 0 4" />
     </marker>
+    <!-- Thêm vào phần <defs> -->
+  <marker id="dotStart" markerWidth="6" markerHeight="6" 
+          refX="3" refY="3" orient="auto" fill="#333" viewBox="0 0 6 6">
+    <circle cx="3" cy="3" r="2" />
+  </marker>
+
+  <marker id="dotStartBlue" markerWidth="6" markerHeight="6" 
+          refX="3" refY="3" orient="auto" fill="#1976D2" viewBox="0 0 6 6">
+    <circle cx="3" cy="3" r="2" />
+  </marker>
+
+  <marker id="dotStartGray" markerWidth="6" markerHeight="6" 
+          refX="3" refY="3" orient="auto" fill="#888" viewBox="0 0 6 6">
+    <circle cx="3" cy="3" r="2" />
+  </marker>
   </defs>
   
   <!-- Background -->
@@ -109,6 +124,8 @@
     <text x="570" y="232" font-family="Arial" font-size="8" fill="#1565C0">MemWrite</text>
     <text x="570" y="244" font-family="Arial" font-size="8" fill="#1565C0">ALUSrc</text>
     <text x="570" y="256" font-family="Arial" font-size="8" fill="#1565C0">RegWrite</text>
+    <text x="570" y="268" font-family="Arial" font-size="8" fill="#1565C0">FlagBranch</text>
+    <text x="570" y="280" font-family="Arial" font-size="8" fill="#1565C0">FlagWrite</text>
   </g>
   
   <!-- Register File -->
@@ -206,7 +223,11 @@
     <rect x="920" y="180" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
     <text x="940" y="198" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#33691E">OR</text>
   </g>
-  
+  <!-- AND-2 Gate -->
+  <g id="block-and2-gate">
+    <rect x="920" y="250" width="40" height="30" fill="url(#gateGradient)" stroke="#689F38" stroke-width="2" rx="5"/>
+    <text x="940" y="268" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#33691E">AND</text>
+  </g>
   <!-- PC Source Mux -->
   <g id="block-mux4">
     <rect x="980" y="120" width="40" height="45" fill="url(#muxGradient)" stroke="#388E3C" stroke-width="2" rx="3"/>
@@ -214,6 +235,35 @@
     <text x="1025" y="140" font-family="Arial" font-size="7" fill="#2E7D32" font-weight="bold">0</text>
     <text x="1025" y="155" font-family="Arial" font-size="7" fill="#2E7D32" font-weight="bold">1</text>
   </g>
+
+  <!-- Flag Block Group (dashed box around N, Z, C, V) -->
+  <g id="block-flags">
+    <rect x="845" y="345" width="130" height="30" fill="none" stroke="#333333" stroke-width="2" stroke-dasharray="7,4" rx="8"/>
+    <text x="912" y="342" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold" fill="#333333">FLAGS</text>
+  </g>
+
+  <!-- Additional Rectangles at M820 300 -->
+  <g id="block-N">
+    <rect x="850" y="350" width="30" height="20" fill="url(#memoryGradient)"  stroke="#6C757D" />
+    <text x="865" y="365" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">N</text>
+  </g>
+  
+  <g id="block-Z">
+    <rect x="880" y="350" width="30" height="20" fill="url(#memoryGradient)"  stroke="#6C757D" />
+    <text x="895" y="365" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">Z</text>
+  </g>
+  
+  <g id="block-C">
+    <rect x="910" y="350" width="30" height="20" fill="url(#memoryGradient)"  stroke="#6C757D" />
+    <text x="925" y="365" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">C</text>
+  </g>
+  
+  <g id="block-V">
+    <rect x="940" y="350" width="30" height="20" fill="url(#memoryGradient)"  stroke="#6C757D" />
+    <text x="955" y="365" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">V</text>
+  </g>
+
+
 
   <!-- Labels for Instruction Fields -->
   <g id="instruction-field-labels" font-family="Arial" font-size="9" fill="#795548">
@@ -291,6 +341,14 @@
     <path id="path-pc-adder2" stroke="#333" d="M190 475 L190 220 L400 220 L400 148 L710 148 L710 148 L750 148" marker-end="url(#arrowhead)"/>
     <!-- Branch Adder to OR Gate -->
     <path id="path-adder2-or" stroke="#333" d="M800 155 L855 155 L975 155" marker-end="url(#arrowhead)"/>
+
+    <!-- Logic gate connections -->
+    <path id="path-and-or" d="M880 195 L915 195" stroke="#333" marker-end="url(#arrowhead)"/>
+    <path id="path-or-mux4" d="M960 195 L1000 195 L1000 165" stroke="#333" marker-end="url(#arrowhead)"/>
+
+    <!-- AND-2 to OR -->
+    <path id="path-and2-or" d="M940 250 L940 210" stroke="#333" marker-end="url(#arrowhead)"/>
+    <path id="path-flag4-and2" d="M940 346 L940 285" stroke="#333" marker-end="url(#arrowhead)"/>
   </g>
 
   <!-- Control Lines (with proper IDs for simulation highlighting) -->
@@ -302,7 +360,7 @@
     <path id="control-branch-enable" d="M460 232 L420 232 L420 95 L860 95 L860 175" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemRead) - Route straight right then down -->
-    <path id="control-memread-enable" d="M510 244 L530 244 L 530 290 L1030 290 L1030 425" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-memread-enable" d="M510 244 L530 244 L530 300 L1030 300 L1030 425" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to MemToReg Mux (MemtoReg) - Route down to MUX -->
     <path id="control-memtoreg-enable" d="M460 256 L410 256 L410 730 L970 730 L970 660" marker-end="url(#arrowheadBlue)"/>
@@ -311,7 +369,7 @@
     <path id="control-reg2loc-enable" d="M500 275 L500 320 L550 320 L550 460" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to ALU Control (ALUOp) - Direct path -->
-    <path id="control-aluop-enable" d="M640 220 L840 220 L840 590" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-aluop-enable" d="M640 220 L800 220 L800 590" marker-end="url(#arrowheadBlue)"/>
     
     <!-- Control Unit to Data Memory (MemWrite) - Direct path -->
     <path id="control-memwrite-enable" d="M640 232 L1055 232 L1055 425" marker-end="url(#arrowheadBlue)"/>
@@ -322,9 +380,8 @@
     
     <!-- Control Unit to Register File (RegWrite) - Direct path -->
     <path id="control-regwrite-enable" d="M640 256 L650 256 L650 415" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-flagwrite-enable" d="M640 280 L780 280 L780 360 L840 360" marker-end="url(#arrowheadBlue)"/>
+    <path id="control-flagbranch-enable" d="M640 268 L920 268" marker-end="url(#arrowheadBlue)"/>
 
-    <!-- Logic gate connections -->
-    <path id="path-and-or" d="M880 195 L915 195" marker-end="url(#arrowheadBlue)"/>
-    <path id="path-or-mux4" d="M960 195 L1000 195 L1000 165" marker-end="url(#arrowheadBlue)"/>
   </g>
 </svg>

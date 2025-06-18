@@ -1,6 +1,7 @@
 ﻿
 import re
 CB_FORMAT = ["CBZ", "CBNZ"]
+B_FORMAT = ["B", "B.EQ", "B.NE", "B.LT", "B.LO", "B.LE", "B.LS"]
 class Assembler:
     def __init__(self):
         self.label_table = {}
@@ -54,7 +55,7 @@ class Assembler:
 
         # --- Pass 2: Resolve Branch Labels to Byte Offsets ---
         print("--- ASM Pass 2: Resolving branch labels to byte offsets ---")
-        branch_opcodes = {"CBZ", "CBNZ", "B"}
+        branch_opcodes = B_FORMAT + CB_FORMAT
         instr_count = 0
 
         for instr_info in raw_instructions_list:
@@ -73,7 +74,7 @@ class Assembler:
 
                 if opcode_process in CB_FORMAT and len(parts_process) >= 3:
                     label_match_re = re.search(r'[,]\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*$', instr_text.strip())
-                elif opcode_process == "B" and len(parts_process) >= 2:
+                elif opcode_process in B_FORMAT and len(parts_process) >= 2:
                     label_match_re = re.search(r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$', instr_text.strip())
 
                 if label_match_re:
@@ -96,7 +97,7 @@ class Assembler:
                         
                         if opcode_process in CB_FORMAT:
                             processed_instr_text = re.sub(r'[,]\s*' + re.escape(label_to_replace_in_text) + r'\s*$', f', {offset}', instr_text.strip())
-                        elif opcode_process == "B":
+                        elif opcode_process in B_FORMAT:
                             processed_instr_text = re.sub(r'\s+' + re.escape(label_to_replace_in_text) + r'\s*$', f' {offset}', instr_text.strip())
                     else:
                         raise ValueError(f"Undefined label '{potential_label}' in '{instr_text}' at 0x{address:X}")

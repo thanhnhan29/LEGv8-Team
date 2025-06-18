@@ -8,6 +8,7 @@ from .memory import Memory
 from .alu import ALU
 from .control_unit import ControlUnit
 from .micro_step import MicroStepState
+from .flags_register import FlagsRegister  # Import FlagsRegister
 from . import datapath_components as dpc # datapath_components
 from .instruction_handlers import INSTRUCTION_HANDLERS # The big dispatch table
 from .alu_mappings import get_alu_control_bits, get_alu_operation # Import ALU mappings
@@ -25,6 +26,7 @@ class SimulatorEngine:
         self.label_table = {}  # Maps label names to addresses
 
         self.control_unit = ControlUnit()
+        self.flags_register = FlagsRegister()  # Thêm flags register
         # ALU is stateless - call ALU.execute() directly
 
         self.current_instruction_generator = None
@@ -78,6 +80,7 @@ class SimulatorEngine:
         self.raw_instruction_memory.initialize()
         self.binary_instruction_memory.initialize()  # Initialize binary memory
         self.label_table = {}
+        self.flags_register.reset_flags()  # Reset flags register
         
         self.current_instruction_generator = None
         self.simulation_loaded = False
@@ -201,6 +204,7 @@ class SimulatorEngine:
             "pc": f"0x{self.pc:X}",
             "registers": complete_regs_display, # Use the new ordered dictionary
             "data_memory": self.data_memory.get_display_dict(),
+            "flags": self.flags_register.get_flags_state(),  # Thêm flags state
             "current_binary": self._get_current_binary_instruction(),
         }
 
@@ -322,6 +326,7 @@ class SimulatorEngine:
             try:
                 # Parse instruction opcode
                 instruction_str_upper = instruction_str_processed.strip().upper()
+                # print("ádf "+instruction_str_upper)
                 parts = re.split(r'[,\s()\[\]]+', instruction_str_upper)
                 parts = [p for p in parts if p]
                 opcode = parts[0].upper() if parts else "NOP"
@@ -385,7 +390,7 @@ class SimulatorEngine:
                 control_values = self.control_unit.get_control_signals(opcode)
                 
                 # Add control signal paths for visualization
-                control_paths = ["control-reg2loc-enable","control-uncondbranch-enable", "control-branch-enable", 'control-memread-enable', 'control-memtoreg-enable', 'control-reg2loc-enable', 'control-aluop-enable', 'control-memwrite-enable', 'control-alusrc-enable', 'control-regwrite-enable']
+                control_paths = ["control-reg2loc-enable","control-uncondbranch-enable", "control-branch-enable", 'control-memread-enable', 'control-memtoreg-enable', 'control-reg2loc-enable', 'control-aluop-enable', 'control-memwrite-enable', 'control-alusrc-enable', 'control-regwrite-enable', 'control-flagwrite-enable', 'control-flagbranch-enable']
                 active_paths_id.extend(control_paths)
                 
                 # Create staggered control signal animations
@@ -401,7 +406,9 @@ class SimulatorEngine:
                         'ALUOp': 'control-aluop-enable',
                         'MemWrite': 'control-memwrite-enable',
                         'ALUSrc': 'control-alusrc-enable',
-                        'RegWrite': 'control-regwrite-enable'
+                        'RegWrite': 'control-regwrite-enable',
+                        'FlagWrite': 'control-flagwrite-enable',
+                        'FlagBranch': 'control-flagbranch-enable'
                     }
                     
                     if signal_name in control_path_map:
@@ -454,7 +461,7 @@ class SimulatorEngine:
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
                     active_paths_id.extend(["path-instr-signext"])
                     animated_signals_id.extend([
-                        {"path_id": "path-instr-signext", "bits":[f"{shamt}"], "duration": 0.2, "start_delay": 0.1},
+                        {"path_id": "path-instr-signext", "bits":[f"{self.current_instr_str_for_display}"], "duration": 0.2, "start_delay": 0.1},
                         #{"path_id": "path-signext-out-mux2", "bits":[f"0x{sign_extended_imm:X}"], "duration": 0.3, "start_delay": 0.3}
                     ])
                 imm_val = decoded_info.get('imm_val')
@@ -466,7 +473,7 @@ class SimulatorEngine:
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
                     active_paths_id.extend(["path-instr-signext"])
                     animated_signals_id.extend([
-                        {"path_id": "path-instr-signext", "bits":[f"{imm_val}"], "duration": 0.2, "start_delay": 0.1},
+                        {"path_id": "path-instr-signext", "bits":[f"{self.current_instr_str_for_display.split('/')[0].replace(',', '')}"], "duration": 0.2, "start_delay": 0.1},
                         #{"path_id": "path-signext-out-mux2", "bits":[f"0x{sign_extended_imm:X}"], "duration": 0.3, "start_delay": 0.3}
                     ])
 
@@ -490,7 +497,7 @@ class SimulatorEngine:
                     # Sequential: sign_extended_imm → Mux2 → ALU
                     active_paths_id.extend(["path-signext-out-mux2", "path-mux2-alu"])
                     animated_signals_id.extend([
-                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.3, "start_delay": 0.5},  # CHANGED: 0.5 → 0.4 (after sign extend at ~0.3)
+                        {"path_id": "path-signext-out-mux2", "bits":[f"0x{alu_input2_val& 0xFFFFFFFFFFFFFFFF:X}"], "duration": 0.3, "start_delay": 0.5},  # CHANGED: 0.5 → 0.4 (after sign extend at ~0.3)
                         {"path_id": "path-mux2-alu", "bits":[f"0x{alu_input2_val:X}"], "duration": 0.1, "start_delay": 0.2}       # CHANGED: 0.6 → 0.8 (after signext-out-mux2)
                     ])
                     stage_log_id += f"  ALU Input 2 via Mux2 (ALUSrc=1): 0x{alu_input2_val:X} from Immediate\n"
@@ -502,7 +509,7 @@ class SimulatorEngine:
                     # ... (update paths/signals for branch offset if any in ID)
                     if "block-signext" not in active_blocks_id: active_blocks_id.append("block-signext")
                     active_paths_id.append("path-instr-signext") 
-                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[f"{(branch_offset_val)//4}"], "duration": 0.2, "start_delay": 0.1})
+                    animated_signals_id.append({"path_id": "path-instr-signext", "bits":[f"{self.current_instr_str_for_display.split('/')[0].replace(',', '')}"], "duration": 0.2, "start_delay": 0.1})
 
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_id, active_blocks_id, active_paths_id, animated_signals_id, control_values).to_dict()
@@ -545,13 +552,25 @@ class SimulatorEngine:
                     raise ValueError(f"Missing execute handler for opcode: {opcode}")
                 execute_handler = handlers['execute']
                 
-                # Execute with current PC for branch calculations
-                exec_result = execute_handler(decoded_info, control_values, alu_input1_val, alu_input2_val, sign_extended_imm, current_pc_of_instruction)
+                # Execute with current PC for branch calculations và flags register
+                if control_values.get('FlagWrite', 0) == 1:
+                    exec_result = execute_handler(decoded_info, control_values, alu_input1_val, alu_input2_val, sign_extended_imm, current_pc_of_instruction, self.flags_register)
+                else:
+                    exec_result = execute_handler(decoded_info, control_values, alu_input1_val, alu_input2_val, sign_extended_imm, current_pc_of_instruction)
                 stage_log_ex += exec_result.get('log', "  (No execute log)") + "\n"
 
                 # Extract execution results
                 alu_result_val = exec_result.get('alu_result', 0)
                 alu_zero_flag = exec_result.get('alu_zero_flag', 0)
+                flag_4 = exec_result.get('flags_data', 0)
+                flag_cond = control_values.get('FlagWrite', 0)
+                if flag_cond == 1:
+                    self.flags_register.set_flags(N = flag_4['N'], Z = flag_4['Z'], C = flag_4['C'], V = flag_4['V'])
+                    if(flag_4['N']==1): active_blocks_ex.append("block-N")
+                    if(flag_4['Z']==1): active_blocks_ex.append("block-Z")
+                    if(flag_4['C']==1): active_blocks_ex.append("block-C")
+                    if(flag_4['V']==1): active_blocks_ex.append("block-V")
+                print("Check flag 4",flag_4)
                 if opcode == "CBNZ":
                     alu_zero_flag = 1 - alu_zero_flag  # Invert zero flag for CBNZ logic
                 branch_target_addr_val = exec_result.get('branch_target_addr', 0)
@@ -607,11 +626,11 @@ class SimulatorEngine:
                     
                     # Sign extend to shift left
                     active_paths_ex.append("path-signext-br-shift") 
-                    animated_signals_ex.append({"path_id": "path-signext-br-shift", "bits":[f"0x{(branch_offset_val)//4:X}"], "duration": 0.2})
+                    animated_signals_ex.append({"path_id": "path-signext-br-shift", "bits":[f"0x{(branch_offset_val)//4 & 0xFFFFFFFFFFFFFFFF:X}"], "duration": 0.2})
                     
                     # Shift left to branch adder
                     active_paths_ex.append("path-shift-adder2") 
-                    animated_signals_ex.append({"path_id": "path-shift-adder2", "bits":[f"0x{(branch_offset_val):X}"], "duration": 0.2})
+                    animated_signals_ex.append({"path_id": "path-shift-adder2", "bits":[f"0x{(branch_offset_val)& 0xFFFFFFFFFFFFFFFF:X}"], "duration": 0.2})
                     
                     # Branch adder to OR gate
                     active_paths_ex.append("path-adder2-or")
@@ -754,13 +773,13 @@ class SimulatorEngine:
                 # ========================================
                 # Part 2: PC Update Logic
                 # ========================================
-                active_blocks_wb.extend(["block-mux4", "block-and-gate", "block-or-gate"])
+                active_blocks_wb.extend(["block-mux4", "block-and-gate", "block-or-gate", "block-and2-gate", "block-flags"])
                 branch_signal = control_values.get('Branch', 0)
                 uncond_branch_signal = control_values.get('UncondBranch', 0)
                 opcode_for_debug = decoded_info.get('opcode', 'N/A')
                 
                 # Calculate PCSrc signal for PC source selection
-                pc_src_signal = dpc.branch_control_logic(branch_signal, alu_zero_flag, uncond_branch_signal)
+                pc_src_signal = dpc.branch_control_logic(branch_signal, alu_zero_flag, uncond_branch_signal, control_values.get('FlagBranch', 0), self.flags_register.check_condition(opcode))
 
                 # Log PC update logic inputs and results
                 pc_update_log = f"  PC Update Logic Input: Opcode='{opcode_for_debug}', BranchSig={branch_signal}, UncondSig={uncond_branch_signal}, ALUZero={alu_zero_flag}\n"
@@ -773,7 +792,7 @@ class SimulatorEngine:
                 stage_log_wb += pc_update_log
 
                 # Visualize PC update logic
-                active_paths_wb.extend(["path-and-or", "path-or-mux4", "path-mux4-pc"])
+                active_paths_wb.extend(["path-and-or", "path-or-mux4", "path-mux4-pc", "path-flag4-and2", "path-and2-or"])
                 
                 # Animate PC update components
                 animated_signals_wb.extend([
@@ -795,6 +814,18 @@ class SimulatorEngine:
                         "duration": 0.2,
                         "start_delay": 0.1 
                     },
+                    {
+                        "path_id": "path-flag4-and2",
+                        "bits": [f"{self.flags_register.check_condition(opcode)}"],
+                        "duration": 0.2,
+                        "start_delay": 0.1 
+                    },
+                    {
+                        "path_id": "path-and2-or",
+                        "bits": [f"{self.flags_register.check_condition(opcode) & control_values.get('FlagBranch', 0)}"],
+                        "duration": 0.2,
+                        "start_delay": 0.1 
+                    }
                 ])
 
                 yield MicroStepState(current_stage_name, current_micro_step_index_yield, stage_log_wb, active_blocks_wb, active_paths_wb, animated_signals_wb, control_values).to_dict()
