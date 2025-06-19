@@ -773,11 +773,19 @@ class SimulatorEngine:
                 # ========================================
                 # Part 2: PC Update Logic
                 # ========================================
-                active_blocks_wb.extend(["block-mux4", "block-and-gate", "block-or-gate", "block-and2-gate", "block-flags"])
+                active_blocks_wb.extend(["block-mux4", "block-and-gate", "block-or-gate", "block-and2-gate"])
                 branch_signal = control_values.get('Branch', 0)
                 uncond_branch_signal = control_values.get('UncondBranch', 0)
                 opcode_for_debug = decoded_info.get('opcode', 'N/A')
-                
+                if(control_values.get('FlagWrite', 0)==1):
+                    active_blocks_wb.append("block-flags")
+                    animated_signals_wb.append({
+                        "path_id": "path-flag4-and2",
+                        "bits": [f"{self.flags_register.check_condition(opcode)}"],
+                        "duration": 0.2,
+                        "start_delay": 0.1 
+                    })
+                    active_paths_wb.append("path-flag4-and2")
                 # Calculate PCSrc signal for PC source selection
                 pc_src_signal = dpc.branch_control_logic(branch_signal, alu_zero_flag, uncond_branch_signal, control_values.get('FlagBranch', 0), self.flags_register.check_condition(opcode))
 
@@ -792,7 +800,7 @@ class SimulatorEngine:
                 stage_log_wb += pc_update_log
 
                 # Visualize PC update logic
-                active_paths_wb.extend(["path-and-or", "path-or-mux4", "path-mux4-pc", "path-flag4-and2", "path-and2-or"])
+                active_paths_wb.extend(["path-and-or", "path-or-mux4", "path-mux4-pc", "path-and2-or"])
                 
                 # Animate PC update components
                 animated_signals_wb.extend([
@@ -811,12 +819,6 @@ class SimulatorEngine:
                     {
                         "path_id": "path-or-mux4",
                         "bits": [f"{pc_src_signal}"],
-                        "duration": 0.2,
-                        "start_delay": 0.1 
-                    },
-                    {
-                        "path_id": "path-flag4-and2",
-                        "bits": [f"{self.flags_register.check_condition(opcode)}"],
                         "duration": 0.2,
                         "start_delay": 0.1 
                     },
@@ -1045,13 +1047,10 @@ class SimulatorEngine:
         
     def _save_state_snapshot(self):
         """Lưu snapshot trạng thái hiện tại vào lịch sử"""
-        print("sdf")
         try:
-            
             current_micro_step = getattr(self, 'micro_step_index_internal', -1)
             
-            
-            if current_micro_step >0:
+            if current_micro_step > 0:
                 print(f"📸 Skipping snapshot save - in middle of instruction (micro step {current_micro_step})")
                 return
             
@@ -1097,12 +1096,29 @@ class SimulatorEngine:
                     print(f"Warning: Unknown registers type: {type(self.registers)}")
                     registers_data = {}
             
+            # Handle flags_register
+            flags_data = None
+            if hasattr(self, 'flags_register') and self.flags_register:
+                if hasattr(self.flags_register, 'get_flags_state'):
+                    flags_data = self.flags_register.get_flags_state()
+                    print(f"📸 Got flags via get_flags_state(): {flags_data}")
+                else:
+                    # Fallback: serialize flags attributes directly
+                    flags_data = {
+                        'N': getattr(self.flags_register, 'N', 0),
+                        'Z': getattr(self.flags_register, 'Z', 0),
+                        'C': getattr(self.flags_register, 'C', 0),
+                        'V': getattr(self.flags_register, 'V', 0)
+                    }
+                    print(f"📸 Got flags via direct attribute access: {flags_data}")
+            
             # Handle memory - use helper method
             memory_data = self.get_memory_backup()
             import copy
             snapshot = {
                 'pc': getattr(self, 'pc', 0),
                 'registers': copy.deepcopy(self.registers),
+                'flags_register': flags_data,  # Store flags separately
                 'memory_data': memory_data,
                 'current_instr_addr_for_display': getattr(self, 'current_instr_addr_for_display', 0),
                 'current_instr_str_for_display': getattr(self, 'current_instr_str_for_display', ''),
@@ -1194,9 +1210,26 @@ class SimulatorEngine:
                 elif isinstance(self.registers, dict):
                     registers_data = self.registers.copy()
             
+            # Handle flags register safely
+            flags_data = None
+            if hasattr(self, 'flags_register') and self.flags_register:
+                if hasattr(self.flags_register, 'get_flags_state'):
+                    flags_data = self.flags_register.get_flags_state()
+                    print(f"📸 Safe snapshot: Got flags via get_flags_state(): {flags_data}")
+                else:
+                    # Fallback: serialize flags attributes directly
+                    flags_data = {
+                        'N': getattr(self.flags_register, 'N', 0),
+                        'Z': getattr(self.flags_register, 'Z', 0),
+                        'C': getattr(self.flags_register, 'C', 0),
+                        'V': getattr(self.flags_register, 'V', 0)
+                    }
+                    print(f"📸 Safe snapshot: Got flags via direct attribute access: {flags_data}")
+            
             snapshot = {
                 'pc': getattr(self, 'pc', 0),
                 'registers': registers_data,
+                'flags_register': flags_data,  # Add flags register
                 'memory_data': memory_data,
                 'current_instr_addr_for_display': getattr(self, 'current_instr_addr_for_display', 0),
                 'current_instr_str_for_display': getattr(self, 'current_instr_str_for_display', ''),
@@ -1368,6 +1401,30 @@ class SimulatorEngine:
                     new_value = snapshot[attr_name]
                     setattr(self, attr_name, new_value)
                     print(f"🔄 {attr_name}: {old_value} → {new_value}")
+                    
+            # Restore flags register separately
+            if 'flags_register' in snapshot and hasattr(self, 'flags_register'):
+                flags_data = snapshot['flags_register']
+                if flags_data and isinstance(flags_data, dict):
+                    if hasattr(self.flags_register, 'set_flags'):
+                        print(f"🔄 Restoring flags: {flags_data}")
+                        self.flags_register.set_flags(
+                            N=flags_data.get('N'),
+                            Z=flags_data.get('Z'),
+                            C=flags_data.get('C'),
+                            V=flags_data.get('V')
+                        )
+                    else:
+                        # Manual restore if set_flags not available
+                        if 'N' in flags_data:
+                            self.flags_register.N = flags_data['N']
+                        if 'Z' in flags_data:
+                            self.flags_register.Z = flags_data['Z']
+                        if 'C' in flags_data:
+                            self.flags_register.C = flags_data['C']
+                        if 'V' in flags_data:
+                            self.flags_register.V = flags_data['V']
+                    print(f"🔄 Flags after restore: {self.flags_register.get_flags_state()}")
             
             # Handle micro_step_index with detailed logging
             if 'micro_step_index' in snapshot:
