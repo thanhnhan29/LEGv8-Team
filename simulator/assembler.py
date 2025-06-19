@@ -1,7 +1,7 @@
 ﻿
 import re
 CB_FORMAT = ["CBZ", "CBNZ"]
-B_FORMAT = ["B", "B.EQ", "B.NE", "B.LT", "B.LO", "B.LE", "B.LS"]
+B_FORMAT = ["B", "B.EQ", "B.NE", "B.LT", "B.LO", "B.LE", "B.LS", "B.HI", "B.GT", "B.GE", "B.HS"]
 class Assembler:
     def __init__(self):
         self.label_table = {}

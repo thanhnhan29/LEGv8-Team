@@ -1,49 +1,49 @@
 ﻿<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Gradient definitions -->
+    <!-- Pastel color definitions -->
     <linearGradient id="controlGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#E8F4FD;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#B8DCF2;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#B5D8FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B5D8FF;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="aluGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FFF3E0;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FFD19A;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#FFE0C9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFE0C9;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="registerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#E8F4FD;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#B8DCF2;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#B5D8FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B5D8FF;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="pcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#E8F5E8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#A5D6A7;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#C1E1C1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C1E1C1;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="memoryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F8F9FA;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#E9ECEF;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#F0F0F0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F0F0F0;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="muxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F1F8E9;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#C8E6C9;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#D6EDCF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D6EDCF;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="signExtendGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F1F8E9;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#C8E6C9;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#D6EDCF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D6EDCF;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="adderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#E3F2FD;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#90CAF9;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#B5D8FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B5D8FF;stop-opacity:1" />
     </linearGradient>
     
     <linearGradient id="gateGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F9FBE7;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#DCEDC8;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#E7EDCF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E7EDCF;stop-opacity:1" />
     </linearGradient>
     
     <!-- Arrow marker -->

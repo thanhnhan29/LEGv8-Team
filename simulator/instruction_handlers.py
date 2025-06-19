@@ -263,5 +263,9 @@ INSTRUCTION_HANDLERS = {
     'B.LO':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
     'B.LE':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
     'B.LS':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.GT':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.HI':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.GE':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
+    'B.HS':    {'decode': decode_b_format,      'execute': execute_b_type,   'memory': memory_noop,   'writeback': writeback_noop},
     # 'NOP':  {'decode': decode_nop,           'execute': execute_nop,      'memory': memory_noop,   'writeback': writeback_noop},
 }

@@ -779,13 +779,6 @@ class SimulatorEngine:
                 opcode_for_debug = decoded_info.get('opcode', 'N/A')
                 if(control_values.get('FlagWrite', 0)==1):
                     active_blocks_wb.append("block-flags")
-                    animated_signals_wb.append({
-                        "path_id": "path-flag4-and2",
-                        "bits": [f"{self.flags_register.check_condition(opcode)}"],
-                        "duration": 0.2,
-                        "start_delay": 0.1 
-                    })
-                    active_paths_wb.append("path-flag4-and2")
                 # Calculate PCSrc signal for PC source selection
                 pc_src_signal = dpc.branch_control_logic(branch_signal, alu_zero_flag, uncond_branch_signal, control_values.get('FlagBranch', 0), self.flags_register.check_condition(opcode))
 
@@ -800,7 +793,7 @@ class SimulatorEngine:
                 stage_log_wb += pc_update_log
 
                 # Visualize PC update logic
-                active_paths_wb.extend(["path-and-or", "path-or-mux4", "path-mux4-pc", "path-and2-or"])
+                active_paths_wb.extend(["path-and-or", "path-or-mux4", "path-mux4-pc", "path-flag4-and2", "path-and2-or"])
                 
                 # Animate PC update components
                 animated_signals_wb.extend([
@@ -819,6 +812,12 @@ class SimulatorEngine:
                     {
                         "path_id": "path-or-mux4",
                         "bits": [f"{pc_src_signal}"],
+                        "duration": 0.2,
+                        "start_delay": 0.1 
+                    },
+                    {
+                        "path_id": "path-flag4-and2",
+                        "bits": [f"{self.flags_register.check_condition(opcode)}"],
                         "duration": 0.2,
                         "start_delay": 0.1 
                     },
