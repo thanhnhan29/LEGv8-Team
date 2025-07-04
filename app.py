@@ -98,7 +98,7 @@ def api_reset_state():
 
 if __name__ == '__main__':
     print("=================================================")
-    print(" Starting LEGv8 Simulator Flask Web Server (Refactored)")
+    print(" Starting LEGv8 Simulator Flask Web Server")
     print(" Access at: http://localhost:5010")
     print("=================================================")
     # Initialize state explicitly at startup, though constructor does it too.

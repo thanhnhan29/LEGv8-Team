@@ -1,97 +1,248 @@
-# LEGv8 Simulator
+# LEGv8 Processor Simulator
 
-Đây là một trình mô phỏng kiến trúc LEGv8, được xây dựng bằng Python và Flask cho giao diện web. Trình mô phỏng này cho phép người dùng viết mã hợp ngữ LEGv8, biên dịch và chạy từng bước để quan sát trạng thái của CPU, bộ nhớ và các thành phần đường dẫn dữ liệu.
+A comprehensive web-based simulator for the LEGv8 instruction set architecture, featuring real-time datapath visualization, micro-step execution, and interactive debugging capabilities.
 
-## Kiến trúc LEGv8
+## Introduction
 
-LEGv8 là một tập lệnh đơn giản hóa dựa trên ARMv8, thường được sử dụng trong giáo dục để dạy các khái niệm cơ bản về kiến trúc máy tính. Nó có một tập lệnh cố định 32-bit và sử dụng kiến trúc load-store.
+This LEGv8 Simulator provides an educational platform for understanding processor architecture and instruction execution. Built with a Python Flask backend and JavaScript frontend, it offers detailed visualization of the LEGv8 datapath and supports comprehensive instruction-level simulation.
 
-### Đặc điểm chính của LEGv8:
+The simulator is designed for computer architecture students and educators who need to visualize how instructions flow through a processor's datapath, understand pipeline stages, and observe register/memory state changes in real-time.
 
-- **Thanh ghi (Registers):** Có 32 thanh ghi đa dụng 64-bit (X0-X30, XZR - Zero Register).
-- **Định dạng lệnh (Instruction Formats):** LEGv8 sử dụng nhiều định dạng lệnh khác nhau cho các loại thao tác khác nhau:
-  - **R-format (Register):** Cho các phép toán số học/logic giữa các thanh ghi.
-    - Ví dụ: `ADD X0, X1, X2` (X0 = X1 + X2)
-  - **I-format (Immediate):** Cho các phép toán với một giá trị tức thời.
-    - Ví dụ: `ADDI X0, X1, #10` (X0 = X1 + 10)
-  - **D-format (Data):** Cho các lệnh tải/lưu trữ dữ liệu từ/vào bộ nhớ.
-    - Ví dụ: `LDUR X0, [X1, #8]` (Tải giá trị từ địa chỉ bộ nhớ X1+8 vào X0)
-  - **B-format (Branch):** Cho các lệnh rẽ nhánh không điều kiện.
-    - Ví dụ: `B label` (Nhảy đến nhãn `label`)
-  - **CB-format (Conditional Branch):** Cho các lệnh rẽ nhánh có điều kiện.
-    - Ví dụ: `CBZ X0, label` (Nếu X0 == 0 thì nhảy đến `label`)
-  - **IW-format (Immediate Wide):** Cho các lệnh di chuyển giá trị tức thời rộng vào thanh ghi.
-    - Ví dụ: `MOVZ X0, #0x1234, LSL #16` (Di chuyển 0x1234 vào X0, dịch trái 16 bit)
-- **Opcode:** Mỗi lệnh LEGv8 có một mã opcode (operation code) xác định loại thao tác sẽ được thực hiện. Trình mô phỏng sử dụng opcode này để điều khiển các đơn vị chức năng.
+## Key Features
 
-## Cấu trúc dự án
+### Execution Modes
 
-Dự án được tổ chức thành các thành phần chính sau:
+- **Micro-Step Execution**: Execute individual pipeline stages (Fetch → Decode → Execute → Memory → Write Back)
+- **Full Instruction Step**: Execute complete instructions with all micro-steps
+- **Auto Run Mode**: Continuous execution with adjustable speed control
+- **Return Back**: Navigate to previous instruction states for debugging
 
-- **`app.py`**: File chính của ứng dụng Flask, xử lý các yêu cầu HTTP từ frontend, điều phối hoạt động của trình biên dịch và trình mô phỏng.
-- **`simulator/`**: Thư mục chứa logic cốt lõi của trình mô phỏng.
-  - **`assembler.py`**: Chịu trách nhiệm phân tích (parse) mã hợp ngữ LEGv8 do người dùng nhập vào, chuyển đổi nó thành mã máy (hoặc một dạng biểu diễn trung gian mà trình mô phỏng có thể hiểu) và giải quyết các nhãn (labels).
-  - **`simulator_engine.py`**: Động cơ chính của trình mô phỏng. Nó quản lý trạng thái CPU (thanh ghi, PC), bộ nhớ, và thực thi từng lệnh theo các giai đoạn của pipeline (Fetch, Decode, Execute, Memory, Write-back - mặc dù ở đây có thể được đơn giản hóa thành các micro-steps).
-  - **`control_unit.py`**: Mô phỏng đơn vị điều khiển. Dựa trên opcode của lệnh, nó tạo ra các tín hiệu điều khiển cần thiết cho các thành phần khác của đường dẫn dữ liệu (ví dụ: chọn đầu vào cho ALU, cho phép ghi vào thanh ghi, v.v.).
-  - **`alu.py`**: Mô phỏng Đơn vị Số học và Logic (ALU), thực hiện các phép toán như cộng, trừ, AND, OR, v.v.
-  - **`memory.py`**: Mô phỏng bộ nhớ chính, nơi lưu trữ cả lệnh và dữ liệu.
-  - **`register_file.py`**: Mô phỏng tập tin thanh ghi của CPU.
-  - **`datapath_components.py`**: Chứa các thành phần nhỏ hơn của đường dẫn dữ liệu như MUX, Adder, Sign Extender.
-  - **`instruction_handlers.py`**: Định nghĩa cách xử lý (decode, execute) cho từng loại lệnh LEGv8 cụ thể.
-  - **`micro_step.py`**: Định nghĩa cấu trúc dữ liệu cho trạng thái của một micro-step trong quá trình thực thi lệnh, giúp trực quan hóa từng bước nhỏ.
-- **`static/`**: Chứa các file tĩnh cho frontend (JavaScript, CSS, hình ảnh SVG của đường dẫn dữ liệu).
-  - **`script.js`**: Xử lý logic phía client, gửi yêu cầu đến backend, cập nhật giao diện người dùng với trạng thái mô phỏng.
-  - **`datapath.svg`**: Hình ảnh SVG của đường dẫn dữ liệu LEGv8, được sử dụng để trực quan hóa luồng dữ liệu.
-- **`templates/`**: Chứa các template HTML (ví dụ: `index.html`) được render bởi Flask.
+### Interactive Visualization
 
-## Cách hoạt động
+- **Real-time Datapath Animation**: Visual representation of data flow through processor components
+- **Component Highlighting**: Active blocks and data paths are highlighted during execution
+- **Signal Animation**: Animated data values moving along processor connections
+- **Control Signal Display**: Real-time status of all control signals
 
-1.  **Nhập mã**: Người dùng nhập mã hợp ngữ LEGv8 vào trình soạn thảo trên giao diện web.
-2.  **Tải/Biên dịch (Load/Compile)**:
-    - Khi người dùng nhấn nút "Load" hoặc "Compile", mã hợp ngữ được gửi đến endpoint `/api/load` (hoặc `/api/compile`) trên server Flask.
-    - `app.py` nhận mã và chuyển cho `Assembler`.
-    - `Assembler` (`assembler.py`) thực hiện:
-      - **Phân tích cú pháp (Parsing):** Tách mã thành các lệnh riêng lẻ, xác định opcode, toán hạng (operands), và nhãn (labels).
-      - **Giải quyết nhãn (Label Resolution):** Thay thế các nhãn bằng địa chỉ bộ nhớ tương ứng.
-      - **Tạo mã máy/Biểu diễn trung gian:** Chuyển đổi lệnh thành một định dạng mà `SimulatorEngine` có thể xử lý. Kết quả là một danh sách các lệnh đã được xử lý và thông tin về nhãn.
-    - Dữ liệu đã xử lý này sau đó được nạp vào `SimulatorEngine` (`simulator_engine.py`) để chuẩn bị cho việc thực thi.
-3.  **Thực thi từng bước (Micro-stepping)**:
-    - Người dùng nhấn nút "Step" (hoặc tương tự) để thực thi một micro-step của lệnh hiện tại.
-    - Yêu cầu được gửi đến endpoint `/api/micro_step`.
-    - `SimulatorEngine` thực hiện một phần nhỏ của quá trình xử lý lệnh (ví dụ: chỉ giai đoạn Fetch, hoặc một phần của giai đoạn Decode).
-    - Quá trình này thường được chia thành các giai đoạn chính của một pipeline CPU cổ điển, nhưng được mô phỏng tuần tự ở đây:
-      - **IF (Instruction Fetch):** Lấy lệnh tiếp theo từ bộ nhớ dựa trên Program Counter (PC).
-      - **ID (Instruction Decode & Register Fetch):** Giải mã lệnh để xác định thao tác cần thực hiện, đọc giá trị từ các thanh ghi cần thiết. `ControlUnit` tạo tín hiệu điều khiển.
-      - **EX (Execute):** `ALU` thực hiện phép toán được chỉ định (ví dụ: cộng, trừ, so sánh).
-      - **MEM (Memory Access):** Nếu là lệnh load/store, truy cập bộ nhớ để đọc hoặc ghi dữ liệu.
-      - **WB (Write Back):** Nếu có, ghi kết quả trở lại vào thanh ghi.
-    - `SimulatorEngine` cập nhật trạng thái nội bộ của nó (PC, thanh ghi, bộ nhớ) và trả về thông tin về micro-step vừa thực hiện, bao gồm các khối và đường dẫn dữ liệu nào đang hoạt động, giá trị của các tín hiệu điều khiển, và log chi tiết.
-4.  **Cập nhật giao diện**:
-    - `script.js` ở phía client nhận dữ liệu từ server.
-    - Nó cập nhật giao diện người dùng để hiển thị:
-      - Trạng thái hiện tại của các thanh ghi.
-      - Nội dung bộ nhớ.
-      - Lệnh đang được thực thi.
-      - Đánh dấu các thành phần đang hoạt động trên hình ảnh SVG của đường dẫn dữ liệu.
-      - Log mô phỏng.
-5.  **Reset**: Người dùng có thể reset trình mô phỏng về trạng thái ban đầu thông qua endpoint `/api/reset`.
+### State Monitoring
 
-## Thiết lập và Chạy
+- **Register File Viewer**: Complete view of all 32 registers (X0-X27, SP, FP, LR, XZR)
+- **Memory Browser**: Data memory contents with hex and decimal displays
+- **Flags Register**: Real-time N, Z, C, V flag status with visual indicators
+- **PC Tracking**: Program Counter visualization and instruction addressing
 
-1.  **Cài đặt dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Chạy ứng dụng Flask**:
-    ```bash
-    python app.py
-    ```
-3.  Mở trình duyệt và truy cập vào địa chỉ được cung cấp (thường là `http://localhost:5010` hoặc `http://127.0.0.1:5010`).
+### Development Tools
 
-## Giải thích chi tiết hơn về các thành phần
+- **Syntax Highlighting**: LEGv8 assembly code editor with syntax coloring
+- **Error Detection**: Comprehensive error reporting for invalid instructions
+- **File Upload**: Load assembly programs from external files
+- **History Navigation**: Step-by-step execution history with return capability
 
-Để hiểu rõ hơn về cách từng phần hoạt động, vui lòng tham khảo các tài liệu sau:
+## Supported Instruction Types
 
-- **`LEGv8_Architecture.md`**: Giải thích chi tiết về kiến trúc LEGv8, các định dạng lệnh và opcode.
-- **`Simulator_Design.md`**: Mô tả thiết kế của các module trong trình mô phỏng (`assembler.py`, `simulator_engine.py`, `control_unit.py`, v.v.) và cách chúng tương tác.
-- **`Code_Execution_Flow.md`**: Mô tả từng bước cách một lệnh được thực thi từ khi nạp đến khi hoàn thành.
+### R-Type Instructions (Register Operations)
+
+- **Arithmetic**: `ADD`, `ADDS`, `SUB`, `SUBS`
+- **Logical**: `AND`, `ANDS`, `ORR`, `EOR`
+- **Shift**: `LSL`, `LSR`
+
+### I-Type Instructions (Immediate Operations)
+
+- **Arithmetic**: `ADDI`, `SUBI`
+- **Logical**: `ANDI`, `ORRI`, `EORI`
+
+### D-Type Instructions (Data Transfer)
+
+- **Load**: `LDUR` (Load Unscaled Register)
+- **Store**: `STUR` (Store Unscaled Register)
+
+### CB-Type Instructions (Conditional Branch)
+
+- **Zero Branches**: `CBZ`, `CBNZ`
+- **Flag Branches**: `B.EQ`, `B.NE`, `B.LT`, `B.LE`, `B.GT`, `B.GE`
+- **Unsigned Branches**: `B.LO`, `B.LS`, `B.HI`, `B.HS`
+
+### B-Type Instructions (Unconditional Branch)
+
+- **Jump**: `B` (Unconditional branch)
+
+### Flag-Setting Operations
+
+- **Arithmetic with Flags**: `ADDS`, `SUBS` automatically update N, Z, C, V flags
+- **Test Operations**: `ANDS` sets flags for logical testing
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8+
+- Flask
+- Modern web browser with JavaScript support
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/thanhnhan29/LEGv8-Team
+   cd LEGv8-Team
+   ```
+2. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Run the simulator**
+
+   ```bash
+   python app.py
+   ```
+4. **Open your browser**
+   Navigate to `http://localhost:5010`
+
+### Quick Start Example
+
+```assembly
+// Sample LEGv8 Program
+ADDI X1, XZR, #10        // X1 = 10
+ADDI X2, XZR, #5         // X2 = 5
+ADD  X3, X1, X2          // X3 = X1 + X2
+STUR X3, [SP, #8]        // Store X3 to memory
+LDUR X4, [SP, #8]        // Load from memory to X4
+
+loop:
+    SUBI X2, X2, #1      // X2--
+    CBZ  X2, end         // Branch if X2 == 0
+    B    loop            // Unconditional branch
+
+end:
+    // Program end
+```
+
+## Project Structure
+
+```
+LEGv8-Team/
+├── app.py                    # Flask web server
+├── simulator/               # Core simulation engine
+│   ├── simulator_engine.py  # Main simulator logic
+│   ├── instruction_handlers.py # Instruction implementation
+│   ├── register_file.py     # Register file management
+│   ├── memory.py            # Memory simulation
+│   ├── alu.py              # ALU operations
+│   ├── control_unit.py     # Control signal generation
+│   └── flags_register.py   # Flags management
+├── static/                 # Frontend assets
+│   ├── script.js          # Main JavaScript logic
+│   ├── style.css          # Styling
+│   └── test2.svg          # Datapath visualization
+├── templates/             # HTML templates
+│   └── index.html         # Main interface
+└── README.md              # This file
+```
+
+## Usage Guide
+
+### Loading a Program
+
+1. Enter LEGv8 assembly code in the editor or upload a `.s, .txt, .asm` file
+2. Click "Compile Code" to load and validate the program
+3. The datapath will initialize and show the first instruction
+
+### Execution Modes
+
+#### Micro-Step Mode
+
+- Click "Micro Step" to execute individual pipeline stages
+- Observe each stage: Fetch → Decode → Execute → Memory → Write Back
+- Watch data flow animations and component highlighting
+
+#### Full Instruction Mode
+
+- Click "Full Instruction" to execute complete instructions
+- All micro-steps execute sequentially with visual feedback
+- Ideal for observing complete instruction behavior
+
+#### Auto Run Mode
+
+- Click "Run" to start continuous execution
+- Adjust speed with the animation speed slider (1-10 seconds)
+- Click "Pause" to stop at any time
+
+#### Return Back Feature
+
+- Click "Return Back" to navigate to the previous instruction state
+- Useful for debugging and understanding instruction effects
+- Complete state restoration including registers, memory, and flags
+
+### Monitoring System State
+
+#### Registers Tab
+
+- View all 32 registers in real-time
+- Displays values in both hexadecimal and signed decimal
+- Special registers (SP, FP, LR, XZR) highlighted
+
+#### Memory Tab
+
+- Browse data memory contents
+- Address and value display in hex/decimal
+- Automatic updates when memory operations occur
+
+#### Control Signals Tab
+
+- Real-time display of all control signals
+- Color-coded active/inactive states
+- Helps understand instruction control flow
+
+#### Flags Tab
+
+- Visual representation of N, Z, C, V flags
+- Real-time updates during flag-setting operations
+- Essential for understanding conditional branches
+
+## Advanced Features
+
+### Animation System
+
+- GSAP-powered smooth animations
+- Configurable animation speed
+- Toggle animations on/off for performance
+- Signal flow visualization along datapaths
+
+### History System
+
+- Instruction-level state snapshots
+- Complete system state preservation
+- Return back to any previous instruction
+- Memory and register state restoration
+
+### Debugging Tools
+
+- Step-by-step execution tracing
+- Real-time state monitoring
+- Execution log with detailed information
+- Interactive datapath exploration
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Computer Architecture course materials
+- LEGv8 instruction set specifications
+- Open-source visualization libraries
+- Educational computer architecture community
+
+## Support
+
+For questions, issues, or feature requests:
+
+- Open an issue on GitHub
+- Contact the development team
+- Check the documentation wiki
+
+---
+
+**Happy Learning with LEGv8 Simulator!**
