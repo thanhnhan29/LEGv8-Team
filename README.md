@@ -3,7 +3,7 @@
 A comprehensive web-based simulator for the LEGv8 instruction set architecture with real-time datapath visualization and interactive debugging capabilities.
 
 ![LEGv8 Simulator](https://img.shields.io/badge/LEGv8-Simulator-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-green)
+![Python](https://img.shields.io/badge/Python-3.9+-green)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow)
 
 ## 🎯 Overview
@@ -23,7 +23,7 @@ This educational simulator provides an interactive platform for understanding pr
 1. **Install dependencies**
 
    ```bash
-   pip install flask
+   pip install -r requirements.txt
    ```
 2. **Run the simulator**
 
