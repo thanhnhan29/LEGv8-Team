@@ -1,19 +1,15 @@
-# Byte-compiled / optimized / DLL files
+
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Cấu hình editor (tuỳ chọn)
 .vscode/
 .idea/
 
-# Thư viện ảo (nếu dùng venv)
 venv/
 env/
 .venv/
 
-# File log/debug
 *.log
 
-# Jupyter Notebook checkpoints
 .ipynb_checkpoints/
