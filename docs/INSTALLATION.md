@@ -11,7 +11,7 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/thanhnhan29/LEGv8-Team.git
+git clone https://github.com/your-repo/LEGv8-Team.git
 cd LEGv8-Team
 ```
 
@@ -76,6 +76,33 @@ Install Flask manually:
 pip install Flask==2.3.3
 ```
 
+## Development Setup
 
+For development purposes:
 
+1. **Enable debug mode** (already enabled in app.py)
+2. **Install additional tools**:
+   ```bash
+   pip install flask-cors  # If CORS issues arise
+   ```
+
+## Docker Setup (Alternative)
+
+If you prefer Docker:
+
+```dockerfile
+FROM python:3.9
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
+
+Build and run:
+
+```bash
+docker build -t legv8-simulator .
+docker run -p 5000:5000 legv8-simulator
 ```
