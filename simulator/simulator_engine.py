@@ -288,7 +288,7 @@ class SimulatorEngine:
             stage_log_if = f"[{current_stage_name} @ PC=0x{current_pc_of_instruction + DISPLAY_ADDRESS_OFFSET:X}]\n"
             
             # Setup visualization components for Fetch stage
-            active_blocks_if = ["block-pc", "block-imem", "block-adder1"]
+            active_blocks_if = ["block-pc", "block-adder1"]
             active_paths_if = ["path-pc-imem", "path-pc-adder1","path-4-adder"]
             animated_signals_if = [
                 {"path_id": "path-pc-imem", "bits": [f"0x{current_pc_of_instruction + DISPLAY_ADDRESS_OFFSET:X}"], "duration": 0.3},
@@ -336,7 +336,7 @@ class SimulatorEngine:
                 stage_log_id += f"  Error extracting opcode, defaulting to NOP: {e}\n"
             
             # Setup visualization components for Decode stage
-            active_blocks_id = ["block-control", "block-regs"]
+            active_blocks_id = ["block-control", "block-imem", "block-regs"]
             active_paths_id = ["path-instr-control", "path-instr-alucontrol"]
             animated_signals_id = [
                 #{"path_id": "path-imem-out", "bits":[f"{instruction_str_processed}"], "duration": 0.1},

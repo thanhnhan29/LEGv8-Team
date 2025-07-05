@@ -131,13 +131,13 @@
   <!-- Register File -->
   <g id="block-regs">
     <rect x="580" y="415" width="120" height="190" fill="url(#registerGradient)" stroke="#1976D2" stroke-width="3" rx="5"/>
-    <text x="600" y="435" font-family="Arial" font-size="9" fill="#0D47A1">Read reg 1</text>
-    <text x="600" y="470" font-family="Arial" font-size="9" fill="#0D47A1">Read reg 2</text>
-    <text x="600" y="505" font-family="Arial" font-size="9" fill="#0D47A1">Write reg</text>
-    <text x="600" y="540" font-family="Arial" font-size="9" fill="#0D47A1">Write data</text>
+    <text x="590" y="435" font-family="Arial" font-size="9" fill="#0D47A1">Read reg 1</text>
+    <text x="590" y="470" font-family="Arial" font-size="9" fill="#0D47A1">Read reg 2</text>
+    <text x="590" y="505" font-family="Arial" font-size="9" fill="#0D47A1">Write reg</text>
+    <text x="590" y="540" font-family="Arial" font-size="9" fill="#0D47A1">Write data</text>
     <text x="640" y="595" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#1565C0">Registers</text>
-    <text x="675" y="435" font-family="Arial" font-size="9" fill="#0D47A1">Read data 1</text>
-    <text x="675" y="470" font-family="Arial" font-size="9" fill="#0D47A1">Read data 2</text>
+    <text x="645" y="435" font-family="Arial" font-size="9" fill="#0D47A1">Read data 1</text>
+    <text x="645" y="470" font-family="Arial" font-size="9" fill="#0D47A1">Read data 2</text>
   </g>
 
   <!-- Mux (Write Register Destination) - Reg2Loc -->
